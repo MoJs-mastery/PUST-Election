@@ -51,7 +51,7 @@ export default function Login() {
       </div>
 
       <div className="login-card">
-        <div className="login-logo">
+        <div className="login-logo" style={{ cursor: 'pointer' }} onClick={() => navigate('/')} title="Back to Home">
           <i className="fa-solid fa-user-shield" />
         </div>
         <h1>PUST-Election</h1>

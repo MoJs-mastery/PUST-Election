@@ -9,7 +9,7 @@ export default function Landing() {
     <div className="landing-page">
       {/* Navigation */}
       <nav className="landing-nav">
-        <div className="landing-nav-brand">
+        <div className="landing-nav-brand" style={{ cursor: 'pointer' }} onClick={() => navigate('/')}>
           <div className="landing-nav-logo">
             <i className="fa-solid fa-check-to-slot" />
           </div>

@@ -3,6 +3,7 @@ import { supabase } from '../supabaseClient'
 import { useToast } from '../toast'
 import { GENDER_LABEL } from '../utils'
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal.jsx'
+import CustomSelect from '../components/CustomSelect'
 
 export default function Musharax() {
   const { showToast } = useToast()
@@ -156,6 +157,9 @@ export default function Musharax() {
       m_gender: form.m_gender,
       m_depadrments_id: parseInt(form.m_depadrments),
       m_image: form.m_image.trim(),
+    }
+    if (modal === 'add') {
+      payload.m_joined = new Date().toISOString()
     }
 
     try {
@@ -337,7 +341,7 @@ export default function Musharax() {
                   <td colSpan={7}>
                     <div className="empty-state">
                       <i className="fa-solid fa-users" />
-                      <p>Musharix lama helin.</p>
+                      <p>Musharax laba helin.</p>
                     </div>
                   </td>
                 </tr>
@@ -406,7 +410,7 @@ export default function Musharax() {
                       </div>
                     ))
                   ) : (
-                    <p className="cell-sub">Wali wax codad ah lama helin.</p>
+                    <p className="cell-sub">Wali wax coddad ah lama helin.</p>
                   )}
                 </div>
               </div>
@@ -456,24 +460,26 @@ export default function Musharax() {
                   <label className="form-label">
                     Gender <span>*</span>
                   </label>
-                  <select className="form-input" value={form.m_gender} onChange={(e) => setForm({ ...form, m_gender: e.target.value })}>
-                    <option value="">Select gender</option>
-                    <option value="lab">Male</option>
-                    <option value="dhadig">Female</option>
-                  </select>
+                  <CustomSelect
+                    placeholder="Select gender"
+                    options={[
+                      { value: 'lab', label: 'Male' },
+                      { value: 'dhadig', label: 'Female' },
+                    ]}
+                    value={form.m_gender}
+                    onSelect={(val) => setForm({ ...form, m_gender: val })}
+                  />
                 </div>
                 <div className="form-group">
                   <label className="form-label">
                     Department <span>*</span>
                   </label>
-                  <select className="form-input" value={form.m_depadrments} onChange={(e) => setForm({ ...form, m_depadrments: e.target.value })}>
-                    <option value="">Select department</option>
-                    {data.departments.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.d_name}
-                      </option>
-                    ))}
-                  </select>
+                  <CustomSelect
+                    placeholder="Select department"
+                    options={data.departments.map((d) => ({ value: String(d.id), label: d.d_name }))}
+                    value={form.m_depadrments}
+                    onSelect={(val) => setForm({ ...form, m_depadrments: val })}
+                  />
                 </div>
                 <div className="form-group full">
                   <label className="form-label">Image URL</label>

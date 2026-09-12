@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
+import CustomSelect from '../components/CustomSelect'
 
 export default function Voting() {
   const [data, setData] = useState({ candidates: [], departments: [] })
@@ -41,7 +42,9 @@ export default function Voting() {
 
       if (err1 || err2) throw (err1 || err2)
 
-      const formattedCandidates = (candidates || []).map(c => ({ ...c }))
+      const formattedCandidates = (candidates || [])
+        .filter(c => c.m_if_allowed !== false)
+        .map(c => ({ ...c }))
 
       setData({
         candidates: formattedCandidates,
@@ -237,12 +240,12 @@ export default function Voting() {
       </div>
 
       <nav className="navbar">
-        <div className="nav-brand">
+        <Link to="/" className="nav-brand" style={{ textDecoration: 'none', cursor: 'pointer', color: 'inherit' }}>
           <div className="nav-logo">
             <i className="fa-solid fa-check-to-slot" />
           </div>
           <span>PUST-Election</span>
-        </div>
+        </Link>
         <div className="nav-stats">
           <Link to="/" className="nav-chip" style={{ textDecoration: 'none', background: 'rgba(73, 133, 196, 0.15)', color: 'var(--color-accent)', fontWeight: 600 }}>
             <i className="fa-solid fa-house" /> <span>Home</span>
@@ -288,7 +291,7 @@ export default function Voting() {
               <div className="cand-body">
                 <h3 className="cand-name">{c.m_name}</h3>
                 <button className="btn-vote" onClick={() => openVoteModal(c)}>
-                  <i className="fa-solid fa-check-to-slot" /> Codi
+                  <i className="fa-solid fa-check-to-slot" /> Codeeh
                 </button>
               </div>
             </div>
@@ -301,7 +304,7 @@ export default function Voting() {
         <div className="modal">
           <div className="modal-head">
             <div className="modal-title">
-              <i className="fa-solid fa-check-to-slot" /> Codeeyso
+              <i className="fa-solid fa-check-to-slot" /> Ucodeeh
             </div>
             <button className="btn-x" onClick={closeVoteModal}>
               <i className="fa-solid fa-xmark" />
@@ -310,15 +313,17 @@ export default function Voting() {
 
           <div className="cand-mini">
             <div className="cand-mini-avatar">
-              {selectedCandidate?.image ? (
-                <img src={selectedCandidate.image} alt="" />
+              {selectedCandidate?.m_image ? (
+                <img src={selectedCandidate.m_image} alt="" />
               ) : (
                 <i className="fa-solid fa-user-tie" />
               )}
             </div>
             <div>
-              <div className="cand-mini-name">{selectedCandidate?.name}</div>
-              <div className="cand-mini-dept">—</div>
+              <div className="cand-mini-name">{selectedCandidate?.m_name}</div>
+              <div className="cand-mini-dept">
+                {data.departments.find((d) => d.id === selectedCandidate?.m_depadrments_id)?.d_name || '—'}
+              </div>
             </div>
           </div>
 
@@ -395,16 +400,16 @@ export default function Voting() {
           </div>
           <h3 className="confirm-title">Xaqiiji Codkaaga</h3>
           <p className="confirm-sub">
-            Ma hubtaa inaad doonaysid inaad u codeyso
+            Ma hubtaa inaad ucodaynasoh
             <br />
-            <span className="confirm-cand">{selectedCandidate?.name}</span>?
+            <span className="confirm-cand">{selectedCandidate?.m_name}</span>?
           </p>
           <div className="confirm-btns">
             <button className="btn-another" onClick={selectAnother}>
-              <i className="fa-solid fa-repeat" /> Dooro kale
+              <i className="fa-solid fa-repeat" />Ka laabo
             </button>
             <button className="btn-confirm-vote" onClick={submitVote} disabled={submitting}>
-              <i className={`fa-solid ${submitting ? 'fa-spinner fa-spin' : 'fa-check'}`} /> {submitting ? 'Processing...' : 'Haa, Codee'}
+              <i className={`fa-solid ${submitting ? 'fa-spinner fa-spin' : 'fa-check'}`} /> {submitting ? 'Processing...' : 'Haa, Ucodee'}
             </button>
           </div>
         </div>
@@ -425,47 +430,6 @@ export default function Voting() {
             <i className="fa-solid fa-check" /> Done
           </button>
         </div>
-      </div>
-    </div>
-  )
-}
-
-function CustomSelect({ placeholder, options, value, onSelect, error }) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef(null)
-
-  useEffect(() => {
-    function onClickOutside(e) {
-      if (ref.current && !ref.current.contains(e.target)) {
-        setOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', onClickOutside)
-    return () => document.removeEventListener('mousedown', onClickOutside)
-  }, [])
-
-  return (
-    <div className="custom-select" ref={ref}>
-      <div
-        className={`select-selected ${open ? 'open' : ''} ${error ? 'err' : ''}`}
-        onClick={() => setOpen(!open)}
-      >
-        <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.8rem', color: '#64748b' }} />
-        <span>{value || placeholder}</span>
-      </div>
-      <div className={`select-items ${open ? 'show' : ''}`}>
-        {options.map((opt) => (
-          <div
-            key={opt}
-            onClick={() => {
-              onSelect(opt)
-              setOpen(false)
-            }}
-          >
-            <i className="fa-solid fa-circle" style={{ fontSize: '0.4rem' }} />
-            {opt}
-          </div>
-        ))}
       </div>
     </div>
   )

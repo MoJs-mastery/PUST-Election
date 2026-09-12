@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
 import { useAuth } from '../auth'
+import { formatDateTime } from '../utils'
 
 export default function Dashboard() {
   const { user } = useAuth()
@@ -60,9 +61,10 @@ export default function Dashboard() {
         const candidate = all_candidates?.find(c => c.id === v.c_musharax_id)
         return {
           id: v.id,
+          vote_id: v.c_id_id || '',
           candidate_name: candidate?.m_name || 'Unknown',
           candidate_image: candidate?.m_image,
-          vote_date: v.created_at || new Date().toISOString()
+          vote_date: v.created_at || ''
         }
       })
 
@@ -232,7 +234,7 @@ export default function Dashboard() {
       <div className="section-card">
         <div className="card-header">
           <h3>
-            <i className="fa-solid fa-clock-rotate-left" /> Codad Dhowaan Lagu Daray
+            <i className="fa-solid fa-clock-rotate-left" /> Codadkii ugu dambeeyey Ee Musharaxiinta
           </h3>
           <span className="badge green">Live</span>
         </div>
@@ -251,7 +253,7 @@ export default function Dashboard() {
                 {data.recent_votes.map((v, i) => (
                   <tr key={v.id}>
                     <td>{i + 1}</td>
-                    <td className="cell-main">{v.id}</td>
+                    <td className="cell-main">{v.vote_id || `#${v.id}`}</td>
                     <td>
                       <div className="avatar-row">
                         <div className="avatar-sm">
@@ -264,7 +266,7 @@ export default function Dashboard() {
                         <span className="cell-main">{v.candidate_name}</span>
                       </div>
                     </td>
-                    <td>No date in DB</td>
+                    <td>{v.vote_date ? formatDateTime(v.vote_date) : '—'}</td>
                   </tr>
                 ))}
               </tbody>

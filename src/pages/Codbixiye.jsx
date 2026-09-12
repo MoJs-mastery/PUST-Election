@@ -52,6 +52,7 @@ export default function Codbixiye() {
         let normGender = rawGender === 'male' || rawGender === 'lab' ? 'lab' : 'dhadig'
         return {
           id: v.id,
+          vote_id: v.c_id_id || '',
           candidate: candMap[v.c_musharax_id] || `Candidate #${v.c_musharax_id}`,
           department: deptMap[v.c_department_id] || `Department #${v.c_department_id}`,
           gender: normGender,
@@ -185,7 +186,7 @@ export default function Codbixiye() {
                 <tr key={v.id}>
                   <td>{(page - 1) * PER_PAGE + i + 1}</td>
                   <td className="cell-main" style={{ fontFamily: 'monospace', letterSpacing: 1 }}>
-                    {v.id}
+                    {v.vote_id || `#${v.id}`}
                   </td>
                   <td className="cell-main">{v.candidate}</td>
                   <td>{v.department}</td>

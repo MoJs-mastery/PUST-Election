@@ -42,7 +42,7 @@ export default function AdminLayout() {
     <div className="admin-shell">
       {mobileOpen && <div className="sidebar-overlay" onClick={() => setMobileOpen(false)} />}
       <aside className={`sidebar${collapsed ? ' collapsed' : ''}${mobileOpen ? ' mobile-open' : ''}`}>
-        <div className="sidebar-header">
+        <div className="sidebar-header" style={{ cursor: 'pointer' }} onClick={() => navigate('/')}>
           <i className="fa-solid fa-check-to-slot logo-icon" />
           <h2>PUST-Election</h2>
         </div>
@@ -76,12 +76,18 @@ export default function AdminLayout() {
 
       <main className="main-content">
         <header className="top-header">
-          <button className="toggle-btn sidebar-toggle-desktop" onClick={() => setCollapsed((c) => !c)}>
-            <i className="fa-solid fa-bars-staggered" />
-          </button>
-          <button className="toggle-btn sidebar-toggle-mobile" onClick={() => setMobileOpen((o) => !o)}>
-            <i className="fa-solid fa-bars" />
-          </button>
+          <div className="header-left">
+            <button className="toggle-btn sidebar-toggle-desktop" onClick={() => setCollapsed((c) => !c)}>
+              <i className="fa-solid fa-bars-staggered" />
+            </button>
+            <button className="toggle-btn sidebar-toggle-mobile" onClick={() => setMobileOpen((o) => !o)}>
+              <i className="fa-solid fa-bars" />
+            </button>
+            <Link to="/" className="top-brand" title="Back to Home">
+              <i className="fa-solid fa-check-to-slot" />
+              <b>PUST-Election</b>
+            </Link>
+          </div>
 
           <div className="header-right">
             <Link to="/" className="toggle-btn" title="Back to Home" aria-label="Back to Home">
