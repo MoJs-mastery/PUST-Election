@@ -477,7 +477,7 @@ body {
 
 /* ============ AVATARS ============ */
 .avatar-sm {
-  @apply w-[38px] h-[38px] rounded-[10px] overflow-hidden bg-indigo-500/15 flex items-center justify-center shrink-0;
+  @apply w-[38px] h-[38px] rounded-full overflow-hidden bg-indigo-500/15 flex items-center justify-center shrink-0;
 }
 
 .avatar-sm img {
@@ -728,6 +728,51 @@ textarea.form-input {
 
 .preview-avatar {
   @apply w-16 h-16 rounded-[16px] object-cover bg-white/5;
+}
+
+/* ============ IMAGE UPLOADER ============ */
+.image-uploader {
+  @apply flex flex-col gap-2;
+}
+
+.image-upload-preview {
+  @apply relative w-full h-[170px] rounded-[16px] border-2 border-dashed border-white/12 bg-white/3 flex items-center justify-center overflow-hidden cursor-pointer transition-colors duration-200;
+}
+
+.image-upload-preview:hover {
+  @apply border-accent/40 bg-white/5;
+}
+
+.image-upload-preview.has-image {
+  @apply border-solid border-white/10 cursor-default;
+}
+
+.image-upload-preview img {
+  @apply w-full h-full object-cover;
+}
+
+.image-upload-placeholder {
+  @apply flex flex-col items-center justify-center gap-3 text-slate-400 pointer-events-none;
+}
+
+.image-upload-placeholder i {
+  @apply text-[2.6rem] text-accent;
+}
+
+.image-upload-placeholder span {
+  @apply text-[0.85rem] font-semibold;
+}
+
+.image-upload-overlay {
+  @apply absolute bottom-2.5 right-2.5 w-9 h-9 rounded-full bg-black/45 text-white text-sm flex items-center justify-center pointer-events-none;
+}
+
+.image-upload-actions {
+  @apply flex items-center gap-2 flex-wrap;
+}
+
+.form-upload-or {
+  @apply text-[0.75rem] uppercase tracking-wide text-slate-500 font-bold text-center;
 }
 
 /* ============ TOGGLE SWITCH ============ */
@@ -1107,38 +1152,38 @@ textarea.form-input {
   box-shadow: 0 20px 40px rgba(0,0,0,0.4),0 0 30px rgba(74, 136, 198,0.15);
 }
 
-.vote-page .cand-header {
-  @apply h-[140px] relative overflow-hidden flex items-center justify-center;
-  background: linear-gradient(135deg, rgba(74, 136, 198, 0.2), rgba(168, 85, 247, 0.1));
+.vote-page .cand-avatar {
+  @apply w-[104px] h-[104px] rounded-full overflow-hidden flex items-center justify-center mb-4 mx-auto border-[3px] border-white/10;
+  background: linear-gradient(135deg, rgba(74, 136, 198, 0.25), rgba(168, 85, 247, 0.18));
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
-.vote-page .cand-image-cover {
+.vote-page .cand-avatar img {
   @apply w-full h-full object-cover transition-transform duration-500;
 }
 
-.vote-page .cand-card:hover .cand-image-cover {
-  transform: scale(1.08);
+.vote-page .cand-card:hover .cand-avatar img {
+  transform: scale(1.06);
 }
 
 .vote-page .cand-placeholder {
-  @apply text-[3.5rem] text-white/10;
-}
-
-.vote-page .cand-header-overlay {
-  @apply absolute inset-0;
-  background: linear-gradient(to top, rgba(30, 41, 59, 0.7) 0%, rgba(30, 41, 59, 0) 50%);
+  @apply text-[3rem] text-white/35;
 }
 
 .vote-page .cand-body {
-  @apply relative z-10 text-center px-5 pb-4;
+  @apply relative z-10 flex flex-col items-center text-center px-5 py-7;
 }
 
 .vote-page .cand-name {
-  @apply text-[1.15rem] font-black mb-3 -translate-y-1.5;
+  @apply text-[1.15rem] font-black mb-1;
   background: linear-gradient(135deg, #f8fafc, #94a3b8);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.vote-page .cand-dept {
+  @apply flex items-center gap-1.5 text-[0.78rem] text-slate-400 mb-5;
 }
 
 .vote-page .btn-vote {
@@ -1944,20 +1989,12 @@ textarea.form-input {
     @apply gap-5;
   }
 
-  .vote-page .cand-header {
-    height: 180px;
-    -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
-    mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
-  }
-
-  .vote-page .cand-image-cover {
-    @apply object-cover w-full h-full;
-    object-position: top center;
+  .vote-page .cand-avatar {
+    @apply w-[96px] h-[96px];
   }
 
   .vote-page .cand-body {
-    margin-top: -18px;
-    padding-top: 0;
+    @apply py-6;
   }
 
   .vote-page .overlay {

@@ -4,6 +4,11 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  test: {
+    globals: true,
+    environment: 'node',
+    include: ['src/**/*.test.{js,jsx,ts,tsx}'],
+  },
   server: {
     port: 5173,
     historyApiFallback: true,

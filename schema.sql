@@ -78,3 +78,63 @@ CREATE POLICY "Allow public full access codbixiye" ON public.codbixiye_codbixiye
 
 DROP POLICY IF EXISTS "Allow public full access profiles" ON public.profiles;
 CREATE POLICY "Allow public full access profiles" ON public.profiles FOR ALL USING (true) WITH CHECK (true);
+
+-- ========================================================
+-- STORAGE: CANDIDATE IMAGES
+-- Creates a public storage bucket + policies for candidate photos
+-- ========================================================
+
+-- Public bucket for candidate images
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+    'candidate-images',
+    'candidate-images',
+    true,
+    4194304, -- 4 MB
+    ARRAY['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif']
+)
+ON CONFLICT (id) DO NOTHING;
+
+-- Public read access for candidate images
+DROP POLICY IF EXISTS "candidate-images-public-read" ON storage.objects;
+CREATE POLICY "candidate-images-public-read"
+ON storage.objects FOR SELECT
+USING (bucket_id = 'candidate-images');
+
+-- Logged-in admins can upload candidate images
+DROP POLICY IF EXISTS "candidate-images-authenticated-upload" ON storage.objects;
+CREATE POLICY "candidate-images-authenticated-upload"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (bucket_id = 'candidate-images');
+
+-- Logged-in admins can delete (and update) uploaded candidate images
+DROP POLICY IF EXISTS "candidate-images-authenticated-delete" ON storage.objects;
+CREATE POLICY "candidate-images-authenticated-delete"
+ON storage.objects FOR DELETE
+TO authenticated
+USING (bucket_id = 'candidate-images');
+
+DROP POLICY IF EXISTS "candidate-images-authenticated-update" ON storage.objects;
+CREATE POLICY "candidate-images-authenticated-update"
+ON storage.objects FOR UPDATE
+TO authenticated
+USING (bucket_id = 'candidate-images')
+WITH CHECK (bucket_id = 'candidate-images');
+
+-- ========================================================
+-- FIX: ALLOW CANDIDATE DELETION (FK CASCADE)
+-- If your live DB was created before this script, its foreign key
+-- "codbixiye_codbixiye_db_c_musharax_id_fkey" is RESTRICT (no CASCADE),
+-- so deleting a candidate that has votes fails with error 23503.
+-- Run the ALTER below to change it to ON DELETE CASCADE.
+-- ========================================================
+
+ALTER TABLE public.codbixiye_codbixiye_db
+    DROP CONSTRAINT IF EXISTS codbixiye_codbixiye_db_c_musharax_id_fkey;
+
+ALTER TABLE public.codbixiye_codbixiye_db
+    ADD CONSTRAINT codbixiye_codbixiye_db_c_musharax_id_fkey
+    FOREIGN KEY (c_musharax_id)
+    REFERENCES public.musharax_musharax_db(id)
+    ON DELETE CASCADE;

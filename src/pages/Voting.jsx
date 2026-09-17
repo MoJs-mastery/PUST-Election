@@ -278,18 +278,21 @@ export default function Voting() {
         <div className="candidates-grid">
           {data.candidates.map((c) => (
             <div className="cand-card" key={c.id}>
-              <div className="cand-header">
-                {c.m_image ? (
-                  <img className="cand-image-cover" src={c.m_image} alt={c.m_name} />
-                ) : (
-                  <div className="cand-placeholder">
-                    <i className="fa-solid fa-user-tie" />
-                  </div>
-                )}
-                <div className="cand-header-overlay" />
-              </div>
               <div className="cand-body">
+                <div className="cand-avatar">
+                  {c.m_image ? (
+                    <img src={c.m_image} alt={c.m_name} />
+                  ) : (
+                    <div className="cand-placeholder">
+                      <i className="fa-solid fa-user-tie" />
+                    </div>
+                  )}
+                </div>
                 <h3 className="cand-name">{c.m_name}</h3>
+                <div className="cand-dept">
+                  <i className="fa-solid fa-building-columns" />
+                  {data.departments.find((d) => d.id === c.m_depadrments_id)?.d_name || ''}
+                </div>
                 <button className="btn-vote" onClick={() => openVoteModal(c)}>
                   <i className="fa-solid fa-check-to-slot" /> Codeeh
                 </button>

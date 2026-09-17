@@ -1,9 +1,12 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../supabaseClient'
 import { useToast } from '../toast'
 import { GENDER_LABEL } from '../utils'
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal.jsx'
 import CustomSelect from '../components/CustomSelect'
+
+const IMAGE_BUCKET = 'candidate-images'
+const MAX_IMAGE_MB = 4
 
 export default function Musharax() {
   const { showToast } = useToast()
@@ -17,6 +20,8 @@ export default function Musharax() {
   const [editing, setEditing] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const fileRef = useRef(null)
 
   const [form, setForm] = useState({
     m_name: '',
@@ -195,9 +200,30 @@ export default function Musharax() {
   async function confirmDelete() {
     setSaving(true)
     try {
+      // Remove the candidate's vote records first (FK codbixiye..._c_musharax_id_fkey blocks deletion otherwise)
+      const { error: voteErr } = await supabase
+        .from('codbixiye_codbixiye_db')
+        .delete()
+        .eq('c_musharax_id', deleteTarget.id)
+      if (voteErr) throw voteErr
+
+      const imgUrl = deleteTarget?.m_image || ''
+      if (imgUrl) {
+        const marker = `/${IMAGE_BUCKET}/`
+        const idx = imgUrl.indexOf(marker)
+        if (idx !== -1) {
+          const path = imgUrl.slice(idx + marker.length).split('?')[0]
+          if (path) {
+            const { error: imgErr } = await supabase.storage.from(IMAGE_BUCKET).remove([path])
+            if (imgErr) {
+              showToast('warn', 'Sawirka waa la tirtiri kari waayay, laakiin musharixa waa laga tirtiri doonaa.')
+            }
+          }
+        }
+      }
       const { error } = await supabase.from('musharax_musharax_db').delete().eq('id', deleteTarget.id)
       if (error) throw error
-      showToast('success', 'Musharax waa la tirtiray')
+      showToast('success', 'Musharax iyo sawirkiisiiba waa la tirtiray')
       setDeleteTarget(null)
       loadData()
     } catch (e) {
@@ -205,6 +231,48 @@ export default function Musharax() {
     } finally {
       setSaving(false)
     }
+  }
+
+  async function handleImageFile(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      showToast('error', 'Fadlan dooro fayl sawir ah (image).')
+      return
+    }
+    if (file.size > MAX_IMAGE_MB * 1024 * 1024) {
+      showToast('error', `Sawirku waa ka weyn yahay ${MAX_IMAGE_MB}MB.`)
+      return
+    }
+    setUploading(true)
+    try {
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '')
+      const path = `candidates/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+      const { data, error } = await supabase.storage
+        .from(IMAGE_BUCKET)
+        .upload(path, file, { upsert: false, contentType: file.type })
+      if (error) throw error
+      const { data: pub } = supabase.storage.from(IMAGE_BUCKET).getPublicUrl(data.path)
+      setForm((f) => ({ ...f, m_image: pub.publicUrl }))
+      showToast('success', 'Sawirka waa la kaydiyay!')
+    } catch (err) {
+      const msg = String(err.message || '')
+      if (msg.toLowerCase().includes('bucket')) {
+        showToast(
+          'error',
+          'Storage bucket ma jiro. Ku samee bucket-ga "candidate-images" ee Supabase Storage darteed.'
+        )
+      } else {
+        showToast('error', err.message || 'Faylka sawirka waa la kicin kari waayay.')
+      }
+    } finally {
+      setUploading(false)
+      if (fileRef.current) fileRef.current.value = ''
+    }
+  }
+
+  function removeImage() {
+    setForm((f) => ({ ...f, m_image: '' }))
   }
 
   if (loading && !data.candidates.length) {
@@ -482,18 +550,67 @@ export default function Musharax() {
                   />
                 </div>
                 <div className="form-group full">
-                  <label className="form-label">Image URL</label>
-                  <input
-                    className="form-input"
-                    value={form.m_image}
-                    onChange={(e) => setForm({ ...form, m_image: e.target.value })}
-                    placeholder="https://..."
-                  />
-                  {form.m_image && (
-                    <div style={{ marginTop: 8 }}>
-                      <img className="preview-avatar" src={form.m_image} alt="preview" />
+                  <label className="form-label">Candidate Image</label>
+                  <div className="image-uploader">
+                    <input
+                      ref={fileRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageFile}
+                      hidden
+                    />
+                    <div
+                      className={`image-upload-preview${form.m_image ? ' has-image' : ''}`}
+                      onClick={() => !uploading && !form.m_image && fileRef.current?.click()}
+                    >
+                      {uploading ? (
+                        <div className="image-upload-placeholder">
+                          <i className="fa-solid fa-circle-notch fa-spin" />
+                          <span>Uploading...</span>
+                        </div>
+                      ) : form.m_image ? (
+                        <>
+                          <img src={form.m_image} alt="preview" />
+                          <span className="image-upload-overlay">
+                            <i className="fa-solid fa-image" />
+                          </span>
+                        </>
+                      ) : (
+                        <div className="image-upload-placeholder">
+                          <i className="fa-solid fa-cloud-arrow-up" />
+                          <span>Click to choose an image from your PC</span>
+                        </div>
+                      )}
                     </div>
-                  )}
+                    <div className="image-upload-actions">
+                      <button
+                        type="button"
+                        className="btn btn-outline btn-sm"
+                        onClick={() => fileRef.current?.click()}
+                        disabled={uploading}
+                      >
+                        <i className={`fa-solid ${uploading ? 'fa-spinner fa-spin' : 'fa-upload'}`} />
+                        {uploading ? 'Uploading...' : 'Choose Image'}
+                      </button>
+                      {form.m_image && (
+                        <button
+                          type="button"
+                          className="btn btn-danger btn-sm"
+                          onClick={removeImage}
+                          disabled={uploading}
+                        >
+                          <i className="fa-solid fa-trash" /> Remove
+                        </button>
+                      )}
+                    </div>
+                    <div className="form-upload-or">or paste an image link</div>
+                    <input
+                      className="form-input"
+                      value={form.m_image}
+                      onChange={(e) => setForm({ ...form, m_image: e.target.value })}
+                      placeholder="https://..."
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -501,7 +618,11 @@ export default function Musharax() {
               <button className="btn btn-outline" onClick={() => setModal(null)}>
                 Cancel
               </button>
-              <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+              <button
+                className="btn btn-primary"
+                onClick={handleSave}
+                disabled={saving || uploading}
+              >
                 <i className={`fa-solid ${saving ? 'fa-spinner fa-spin' : 'fa-check'}`} />
                 {saving ? 'Saving...' : modal === 'add' ? 'Add Candidate' : 'Save Changes'}
               </button>
