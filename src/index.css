@@ -1228,9 +1228,10 @@ textarea.form-input {
 }
 
 .vote-page .overlay {
-  @apply fixed inset-0 z-[1000] flex items-center justify-center p-5 opacity-0 pointer-events-none transition-opacity duration-300;
+  @apply fixed inset-0 z-[1000] flex items-center justify-center p-5 opacity-0 pointer-events-none transition-opacity duration-300 overflow-y-auto;
   background: rgba(5, 10, 25, 0.88);
   backdrop-filter: blur(14px);
+  -webkit-overflow-scrolling: touch;
 }
 
 .vote-page .overlay.active {
@@ -1241,6 +1242,16 @@ textarea.form-input {
   @apply bg-slate-900/[0.97] border border-white/10 rounded-[24px] w-full max-w-[480px] p-7 transition-transform duration-500;
   box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(40, 85, 206, 0.1);
   transform: translateY(30px) scale(0.95);
+  max-height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+@media (max-width: 480px) {
+  .vote-page .modal {
+    max-height: calc(100% - 20px);
+  }
 }
 
 .vote-page .overlay.active .modal {
@@ -2285,6 +2296,16 @@ textarea.form-input {
 
   .landing-hero h1 {
     @apply text-[1.6rem];
+  }
+
+  .vote-page .modal {
+    @apply px-4 py-5;
+  }
+}
+
+@media (max-height: 520px) {
+  .vote-page .overlay {
+    align-items: flex-start;
   }
 }
 
