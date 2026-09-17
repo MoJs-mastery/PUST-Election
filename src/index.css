@@ -7,8 +7,8 @@
   --color-app-bg: #0f172a;
   --color-surface: #1e293b;
   --color-surface-2: #334155;
-  --color-accent: #4a88c6;
-  --color-accent-2: #639a44;
+  --color-accent: #2855ce; /* PUST Royal Blue */
+  --color-accent-2: #2cb22b; /* PUST Green */
 
   --sidebar-w: 280px;
   --sidebar-collapsed: 80px;
@@ -34,12 +34,12 @@ body {
 }
 
 ::selection {
-  background: rgba(74, 136, 198, 0.4);
+  background: rgba(40, 85, 206, 0.4);
   color: #f8fafc;
 }
 
 ::-moz-selection {
-  background: rgba(74, 136, 198, 0.4);
+  background: rgba(40, 85, 206, 0.4);
   color: #f8fafc;
 }
 
@@ -106,7 +106,7 @@ body {
 
 .nav-link.active {
   @apply bg-accent text-white;
-  box-shadow: 0 4px 12px rgba(74, 136, 198, 0.3);
+  box-shadow: 0 4px 12px rgba(40, 85, 206, 0.3);
 }
 
 .nav-icon {
@@ -252,13 +252,13 @@ body {
 
 .btn-primary {
   @apply text-white;
-  box-shadow: 0 4px 14px rgba(74, 136, 198, 0.3);
+  box-shadow: 0 4px 14px rgba(40, 85, 206, 0.3);
   background: linear-gradient(135deg, var(--color-accent), var(--color-accent-2));
 }
 
 .btn-primary:hover {
   @apply -translate-y-0.5;
-  box-shadow: 0 8px 20px rgba(74, 136, 198, 0.45);
+  box-shadow: 0 8px 20px rgba(40, 85, 206, 0.45);
 }
 
 .btn-outline {
@@ -330,7 +330,7 @@ body {
 
 .search-box input:focus {
   @apply outline-none border-accent;
-  box-shadow: 0 0 0 3px rgba(74, 136, 198, 0.15);
+  box-shadow: 0 0 0 3px rgba(40, 85, 206, 0.15);
 }
 
 /* ============ FILTER PILLS ============ */
@@ -348,7 +348,7 @@ body {
 
 .filter-pill.active {
   @apply text-white border-transparent;
-  box-shadow: 0 4px 12px rgba(74, 136, 198, 0.35);
+  box-shadow: 0 4px 12px rgba(40, 85, 206, 0.35);
   background: linear-gradient(135deg, var(--color-accent), var(--color-accent-2));
 }
 
@@ -373,7 +373,7 @@ body {
 }
 
 .stat-icon.indigo {
-  @apply bg-indigo-500/15 text-indigo-400;
+  @apply bg-accent/15 text-accent;
 }
 
 .stat-icon.green {
@@ -397,7 +397,7 @@ body {
 }
 
 .stat-icon.blue {
-  @apply bg-blue-500/15 text-blue-400;
+  @apply bg-accent/15 text-accent;
 }
 
 .stat-value {
@@ -477,7 +477,7 @@ body {
 
 /* ============ AVATARS ============ */
 .avatar-sm {
-  @apply w-[38px] h-[38px] rounded-full overflow-hidden bg-indigo-500/15 flex items-center justify-center shrink-0;
+  @apply w-[38px] h-[38px] rounded-full overflow-hidden bg-accent/15 flex items-center justify-center shrink-0;
 }
 
 .avatar-sm img {
@@ -510,7 +510,7 @@ body {
 }
 
 .badge.blue {
-  @apply bg-indigo-500/12 text-indigo-400;
+  @apply bg-accent/12 text-accent;
 }
 
 .badge.purple {
@@ -526,7 +526,7 @@ body {
 }
 
 .badge.indigo {
-  @apply bg-indigo-500/12 text-indigo-400;
+  @apply bg-accent/12 text-accent;
 }
 
 /* ============ RANK BADGE ============ */
@@ -696,7 +696,7 @@ body {
 
 .form-input:focus {
   @apply outline-none border-accent;
-  box-shadow: 0 0 0 3px rgba(74, 136, 198, 0.15);
+  box-shadow: 0 0 0 3px rgba(40, 85, 206, 0.15);
 }
 
 select.form-input {
@@ -948,8 +948,8 @@ textarea.form-input {
 }
 
 .toast-info {
-  @apply border-indigo-500/35;
-  background: rgba(74, 136, 198, 0.12);
+  @apply border-accent/40;
+  background: rgba(40, 85, 206, 0.12);
 }
 
 .toast-icon {
@@ -969,7 +969,7 @@ textarea.form-input {
 }
 
 .toast-info .toast-icon {
-  @apply bg-indigo-500/20 text-indigo-500;
+  @apply bg-accent/20 text-accent;
 }
 
 .toast-body {
@@ -1034,7 +1034,7 @@ textarea.form-input {
 
 .select-selected.open {
   @apply border-accent;
-  box-shadow: 0 0 0 4px rgba(74, 136, 198,0.15);
+  box-shadow: 0 0 0 4px rgba(40, 85, 206,0.15);
 }
 
 .select-items {
@@ -1078,8 +1078,8 @@ textarea.form-input {
   @apply min-h-screen text-slate-100;
   background: #0a0f1e;
   background-image:
-    radial-gradient(ellipse at 20% 20%, rgba(74, 136, 198, 0.12) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 80%, rgba(168, 85, 247, 0.08) 0%, transparent 50%);
+    radial-gradient(ellipse at 20% 20%, rgba(40, 85, 206, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(44, 178, 43, 0.08) 0%, transparent 50%);
 }
 
 .vote-page .navbar {
@@ -1102,7 +1102,7 @@ textarea.form-input {
 }
 
 .vote-page .nav-chip {
-  @apply flex items-center gap-1.5 bg-indigo-500/10 border border-indigo-500/20 px-3.5 py-1.5 rounded-[20px] text-indigo-300 font-semibold;
+  @apply flex items-center gap-1.5 bg-accent/10 border border-accent/20 px-3.5 py-1.5 rounded-[20px] text-accent font-semibold;
 }
 
 .vote-page .hero {
@@ -1148,13 +1148,13 @@ textarea.form-input {
 }
 
 .vote-page .cand-card:hover {
-  @apply -translate-y-2 border-blue-500/30;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.4),0 0 30px rgba(74, 136, 198,0.15);
+  @apply -translate-y-2 border-accent/40;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4),0 0 30px rgba(40, 85, 206,0.15);
 }
 
 .vote-page .cand-avatar {
   @apply w-[104px] h-[104px] rounded-full overflow-hidden flex items-center justify-center mb-4 mx-auto border-[3px] border-white/10;
-  background: linear-gradient(135deg, rgba(74, 136, 198, 0.25), rgba(168, 85, 247, 0.18));
+  background: linear-gradient(135deg, rgba(40, 85, 206, 0.25), rgba(44, 178, 43, 0.18));
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
@@ -1189,12 +1189,12 @@ textarea.form-input {
 .vote-page .btn-vote {
   @apply w-full text-white border-none py-2.5 rounded-[12px] font-bold text-sm cursor-pointer flex items-center justify-center gap-2 transition-all duration-200;
   background: linear-gradient(135deg, var(--color-accent), var(--color-accent-2));
-  box-shadow: 0 6px 20px rgba(74, 136, 198, 0.35);
+  box-shadow: 0 6px 20px rgba(40, 85, 206, 0.35);
 }
 
 .vote-page .btn-vote:hover {
   @apply -translate-y-0.5;
-  box-shadow: 0 10px 28px rgba(74, 136, 198, 0.55);
+  box-shadow: 0 10px 28px rgba(40, 85, 206, 0.55);
 }
 
 .vote-page .vote-toast-container {
@@ -1239,7 +1239,7 @@ textarea.form-input {
 
 .vote-page .modal {
   @apply bg-slate-900/[0.97] border border-white/10 rounded-[24px] w-full max-w-[480px] p-7 transition-transform duration-500;
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(74, 136, 198, 0.1);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(40, 85, 206, 0.1);
   transform: translateY(30px) scale(0.95);
 }
 
@@ -1268,7 +1268,7 @@ textarea.form-input {
 }
 
 .vote-page .cand-mini {
-  @apply flex items-center gap-4 bg-indigo-500/8 border border-indigo-500/15 rounded-[14px] px-4 py-3 mb-5;
+  @apply flex items-center gap-4 bg-accent/8 border border-accent/15 rounded-[14px] px-4 py-3 mb-5;
 }
 
 .vote-page .cand-mini-avatar {
@@ -1313,7 +1313,7 @@ textarea.form-input {
 
 .vote-page .finput:focus {
   @apply outline-none border-accent;
-  box-shadow: 0 0 0 4px rgba(74, 136, 198, 0.15);
+  box-shadow: 0 0 0 4px rgba(40, 85, 206, 0.15);
 }
 
 .vote-page .finput.err {
@@ -1341,12 +1341,12 @@ textarea.form-input {
 .vote-page .btn-submit {
   @apply w-full text-white border-none py-3.5 rounded-[14px] font-extrabold text-[1rem] cursor-pointer mt-1.5 flex items-center justify-center gap-2.5 transition-all duration-200;
   background: linear-gradient(135deg, var(--color-accent), var(--color-accent-2));
-  box-shadow: 0 8px 24px rgba(74, 136, 198, 0.4);
+  box-shadow: 0 8px 24px rgba(40, 85, 206, 0.4);
 }
 
 .vote-page .btn-submit:hover {
   @apply -translate-y-0.5;
-  box-shadow: 0 12px 30px rgba(74, 136, 198, 0.6);
+  box-shadow: 0 12px 30px rgba(40, 85, 206, 0.6);
 }
 
 .vote-page .btn-submit:disabled {
@@ -1431,8 +1431,8 @@ textarea.form-input {
   @apply relative overflow-hidden min-h-screen flex items-center justify-center p-5;
   background: #0a0f1e;
   background-image:
-    radial-gradient(ellipse at 30% 20%, rgba(74, 136, 198, 0.18) 0%, transparent 55%),
-    radial-gradient(ellipse at 80% 80%, rgba(168, 85, 247, 0.15) 0%, transparent 55%);
+    radial-gradient(ellipse at 30% 20%, rgba(40, 85, 206, 0.18) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 80%, rgba(44, 178, 43, 0.15) 0%, transparent 55%);
 }
 
 .login-particles {
@@ -1456,7 +1456,7 @@ textarea.form-input {
 .login-logo {
   @apply w-[72px] h-[72px] mx-auto mb-[18px] rounded-[20px] text-white text-[1.8rem] flex items-center justify-center;
   background: linear-gradient(135deg, var(--color-accent), var(--color-accent-2));
-  box-shadow: 0 12px 30px rgba(74, 136, 198, 0.45);
+  box-shadow: 0 12px 30px rgba(40, 85, 206, 0.45);
 }
 
 .login-card h1 {
@@ -1493,7 +1493,7 @@ textarea.form-input {
 
 .login-input-wrap input:focus {
   @apply outline-none border-accent;
-  box-shadow: 0 0 0 4px rgba(74, 136, 198, 0.15);
+  box-shadow: 0 0 0 4px rgba(40, 85, 206, 0.15);
 }
 
 .login-eye {
@@ -1509,18 +1509,18 @@ textarea.form-input {
 }
 
 .login-remember input {
-  @apply accent-indigo-500 w-[15px] h-[15px];
+  @apply accent-accent-2 w-[15px] h-[15px];
 }
 
 .login-btn {
   @apply w-full text-white border-none py-4 rounded-[14px] text-base font-extrabold cursor-pointer flex items-center justify-center gap-2.5 transition-all duration-200;
   background: linear-gradient(135deg, var(--color-accent), var(--color-accent-2));
-  box-shadow: 0 8px 24px rgba(74, 136, 198, 0.4);
+  box-shadow: 0 8px 24px rgba(40, 85, 206, 0.4);
 }
 
 .login-btn:hover {
   @apply -translate-y-0.5;
-  box-shadow: 0 12px 30px rgba(74, 136, 198, 0.6);
+  box-shadow: 0 12px 30px rgba(40, 85, 206, 0.6);
 }
 
 .login-btn:disabled {
@@ -1536,8 +1536,8 @@ textarea.form-input {
   @apply min-h-screen flex flex-col items-center justify-center text-center p-5;
   background: #0f172a;
   background-image:
-    radial-gradient(ellipse at 30% 20%, rgba(74, 136, 198, 0.15) 0%, transparent 55%),
-    radial-gradient(ellipse at 80% 80%, rgba(168, 85, 247, 0.12) 0%, transparent 55%);
+    radial-gradient(ellipse at 30% 20%, rgba(40, 85, 206, 0.15) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 80%, rgba(44, 178, 43, 0.12) 0%, transparent 55%);
 }
 
 .nf-code {
@@ -1559,12 +1559,12 @@ textarea.form-input {
 .nf-btn {
   @apply inline-flex items-center gap-2.5 text-white no-underline px-[30px] py-3.5 rounded-[14px] font-bold transition-all duration-200;
   background: linear-gradient(135deg, var(--color-accent), var(--color-accent-2));
-  box-shadow: 0 8px 24px rgba(74, 136, 198, 0.4);
+  box-shadow: 0 8px 24px rgba(40, 85, 206, 0.4);
 }
 
 .nf-btn:hover {
   @apply -translate-y-0.5;
-  box-shadow: 0 12px 30px rgba(74, 136, 198, 0.6);
+  box-shadow: 0 12px 30px rgba(40, 85, 206, 0.6);
 }
 
 /* ============ SHARED COMPONENT CLASSES ============ */
@@ -1720,7 +1720,7 @@ textarea.form-input {
   transform: translate(-50%, -50%);
   width: 600px;
   height: 600px;
-  background: radial-gradient(circle, rgba(74, 136, 198, 0.15) 0%, rgba(15, 23, 42, 0) 70%);
+  background: radial-gradient(circle, rgba(40, 85, 206, 0.15) 0%, rgba(15, 23, 42, 0) 70%);
   z-index: 0;
 }
 
@@ -1767,7 +1767,7 @@ textarea.form-input {
 .landing-cta-btn {
   @apply px-8 py-4 text-[1.1rem];
   background: linear-gradient(135deg, var(--color-accent), var(--color-accent-2));
-  box-shadow: 0 8px 25px rgba(74, 136, 198, 0.4);
+  box-shadow: 0 8px 25px rgba(40, 85, 206, 0.4);
 }
 
 .landing-features {
@@ -1808,10 +1808,114 @@ textarea.form-input {
 }
 
 .landing-footer {
-  @apply text-center text-[0.9rem];
-  padding: 30px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(10, 15, 30, 0.65);
+  padding: 48px 40px 22px;
   color: var(--color-slate-500);
-  border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+.lf-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+  align-items: start;
+}
+
+.lf-brand .lf-logo {
+  @apply w-11 h-11 rounded-[12px] flex items-center justify-center text-[1.1rem] text-white mb-4;
+  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-2));
+  box-shadow: 0 8px 20px rgba(40, 85, 206, 0.35);
+}
+
+.lf-brand h4,
+.lf-col h4 {
+  @apply text-[#f1f5f9] font-bold tracking-wide;
+}
+
+.lf-brand h4 {
+  @apply text-[1.2rem] mb-2.5;
+}
+
+.lf-brand p {
+  @apply text-[0.9rem] leading-[1.7];
+  color: var(--color-slate-500);
+}
+
+.lf-col h4 {
+  @apply text-[0.95rem] uppercase tracking-[1px] mb-4;
+}
+
+.lf-col ul {
+  @apply list-none p-0 m-0 flex flex-col gap-3;
+}
+
+.lf-col a {
+  @apply text-slate-400 no-underline flex items-center gap-2.5 text-[0.92rem] transition-colors duration-200;
+}
+
+.lf-col a:hover {
+  color: var(--color-accent);
+}
+
+.lf-col li i {
+  @apply w-[18px] flex items-center justify-center text-center;
+  color: var(--color-accent);
+}
+
+.lf-socials-label {
+  @apply text-[0.85rem] mb-4;
+  color: var(--color-slate-500);
+}
+
+.lf-socials {
+  @apply flex items-center gap-3;
+}
+
+.lf-social {
+  @apply w-[42px] h-[42px] rounded-full flex items-center justify-center text-[1.05rem] text-white no-underline transition-all duration-250;
+}
+
+.lf-social i {
+  color: #fff;
+  width: auto;
+}
+
+.lf-social.facebook {
+  background: #1877f2;
+}
+
+.lf-social.facebook:hover {
+  background: #0f66d0;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 18px rgba(24, 119, 242, 0.4);
+}
+
+.lf-social.instagram {
+  background: radial-gradient(circle at 30% 110%, #fdf497 0%, #fd5949 45%, #d6249f 70%, #285aeb 100%);
+}
+
+.lf-social.instagram:hover {
+  transform: translateY(-3px);
+  filter: brightness(1.12);
+  box-shadow: 0 8px 18px rgba(214, 36, 159, 0.4);
+}
+
+.lf-social.twitter {
+  background: #1d9bf0;
+}
+
+.lf-social.twitter:hover {
+  background: #1577c0;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 18px rgba(29, 155, 240, 0.4);
+}
+
+.lf-bottom {
+  @apply text-center text-[0.82rem] pt-6 mt-9;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--color-slate-500);
 }
 
 /* ============ RESPONSIVE BREAKPOINTS ============ */
@@ -2120,6 +2224,11 @@ textarea.form-input {
 
   .landing-footer {
     @apply px-5 py-5;
+  }
+
+  .lf-grid {
+    grid-template-columns: 1fr;
+    gap: 30px;
   }
 }
 

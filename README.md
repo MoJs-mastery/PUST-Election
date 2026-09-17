@@ -1,6 +1,6 @@
 # PUST-Election
 
-A university student-union election web app for **PUST (Puntland State University)**. Voters enter a one-time voting ID code and cast a vote for a candidate in their department. Administrators manage candidates, departments, voting ID codes, voter audit logs, and other admins — all powered by a Supabase backend.
+A university student-union election web app for **PUST (Puntland University of Science & Technology)**. Voters enter a one-time voting ID code and cast a vote for a candidate in their department. Administrators manage candidates, departments, voting ID codes, voter audit logs, and other admins — all powered by a Supabase backend.
 
 ## Features
 

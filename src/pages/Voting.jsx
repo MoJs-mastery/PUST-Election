@@ -247,7 +247,7 @@ export default function Voting() {
           <span>PUST-Election</span>
         </Link>
         <div className="nav-stats">
-          <Link to="/" className="nav-chip" style={{ textDecoration: 'none', background: 'rgba(73, 133, 196, 0.15)', color: 'var(--color-accent)', fontWeight: 600 }}>
+          <Link to="/" className="nav-chip" style={{ textDecoration: 'none', background: 'rgba(40, 85, 206, 0.15)', color: 'var(--color-accent)', fontWeight: 600 }}>
             <i className="fa-solid fa-house" /> <span>Home</span>
           </Link>
           <Link to="/dashboard" className="nav-chip" style={{ textDecoration: 'none' }}>
@@ -264,7 +264,7 @@ export default function Voting() {
 
       <header className="hero">
         <div className="hero-badge">
-          <span className="dot" style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981' }} />
+          <span className="dot" style={{ width: 8, height: 8, borderRadius: '50%', background: '#2cb22b' }} />
           Cod bixin &nbsp;•&nbsp; 2026
         </div>
         <h1>Codee Musharaxaadka</h1>
@@ -349,7 +349,7 @@ export default function Voting() {
                 <i className="id-status fa-solid fa-spinner fa-spin" style={{ color: 'var(--color-accent)' }} />
               )}
               {idState === 'ok' && (
-                <i className="id-status fa-solid fa-circle-check" style={{ color: '#10b981' }} />
+                <i className="id-status fa-solid fa-circle-check" style={{ color: '#2cb22b' }} />
               )}
               {idState === 'err' && (
                 <i className="id-status fa-solid fa-circle-xmark" style={{ color: '#ef4444' }} />

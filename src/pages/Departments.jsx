@@ -146,7 +146,7 @@ export default function Departments() {
 
       <div className="toolbar">
         <div className="toolbar-left">
-          <span className="badge indigo" style={{ background: 'rgba(73, 133, 196, 0.12)', color: 'var(--color-accent)' }}>
+          <span className="badge indigo" style={{ background: 'rgba(40, 85, 206, 0.12)', color: 'var(--color-accent)' }}>
             <i className="fa-solid fa-building-columns" /> {data.total_departments ?? 0} departments
           </span>
         </div>

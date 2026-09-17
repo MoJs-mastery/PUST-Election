@@ -65,7 +65,7 @@ export default function Landing() {
         <div className="landing-features-grid">
 
           <div className="landing-feature-card">
-            <div className="landing-feature-icon" style={{ background: 'rgba(74, 136, 198, 0.15)', color: 'var(--color-accent)' }}>
+            <div className="landing-feature-icon" style={{ background: 'rgba(40, 85, 206, 0.15)', color: 'var(--color-accent)' }}>
               <i className="fa-solid fa-shield-halved" />
             </div>
             <h3>Secure System</h3>
@@ -73,7 +73,7 @@ export default function Landing() {
           </div>
 
           <div className="landing-feature-card">
-            <div className="landing-feature-icon" style={{ background: 'rgba(99, 154, 68, 0.15)', color: 'var(--color-accent-2)' }}>
+            <div className="landing-feature-icon" style={{ background: 'rgba(44, 178, 43, 0.15)', color: 'var(--color-accent-2)' }}>
               <i className="fa-solid fa-bolt" />
             </div>
             <h3>Fast & Easy</h3>
@@ -81,7 +81,7 @@ export default function Landing() {
           </div>
 
           <div className="landing-feature-card">
-            <div className="landing-feature-icon" style={{ background: 'rgba(73, 133, 196, 0.15)', color: 'var(--color-accent)' }}>
+            <div className="landing-feature-icon" style={{ background: 'rgba(40, 85, 206, 0.15)', color: 'var(--color-accent)' }}>
               <i className="fa-solid fa-chart-pie" />
             </div>
             <h3>Real-time Analytics</h3>
@@ -93,7 +93,85 @@ export default function Landing() {
 
       {/* Footer */}
       <footer className="landing-footer">
-        © {new Date().getFullYear()} Puntland University of Science & Technology. All rights reserved.
+        <div className="lf-grid">
+          <div className="lf-brand">
+            <div className="lf-logo">
+              <i className="fa-solid fa-check-to-slot" />
+            </div>
+            <h4>PUST-Election</h4>
+            <p>
+              Official online voting platform for Puntland University of Science & Technology student
+              elections. Secure, fast and accessible from anywhere on campus.
+            </p>
+          </div>
+
+          <div className="lf-col">
+            <h4>Contact</h4>
+            <ul>
+              <li>
+                <a href="tel:+252906821919">
+                  <i className="fa-solid fa-phone" /> +252 906821919
+                </a>
+              </li>
+              <li>
+                <a href="tel:+252907616678">
+                  <i className="fa-solid fa-phone" /> +252 90 7616678
+                </a>
+              </li>
+              <li>
+                <a href="https://www.pust.edu.so" target="_blank" rel="noopener noreferrer">
+                  <i className="fa-solid fa-globe" /> www.pust.edu.so
+                </a>
+              </li>
+              <li>
+                <a href="mailto:info@pust.edu.so">
+                  <i className="fa-solid fa-envelope" /> info@pust.edu.so
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <div className="lf-col">
+            <h4>Follow Us</h4>
+            <p className="lf-socials-label">Stay connected with PUST on social media.</p>
+            <div className="lf-socials">
+              <a
+                className="lf-social facebook"
+                href="https://www.pust.edu.so"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Facebook"
+                title="Facebook"
+              >
+                <i className="fa-brands fa-facebook-f" />
+              </a>
+              <a
+                className="lf-social instagram"
+                href="https://www.pust.edu.so"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Instagram"
+                title="Instagram"
+              >
+                <i className="fa-brands fa-instagram" />
+              </a>
+              <a
+                className="lf-social twitter"
+                href="https://www.pust.edu.so"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Twitter"
+                title="Twitter"
+              >
+                <i className="fa-brands fa-twitter" />
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div className="lf-bottom">
+          © {new Date().getFullYear()} Puntland University of Science & Technology. All rights reserved.
+        </div>
       </footer>
     </div>
   )

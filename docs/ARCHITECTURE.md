@@ -5,7 +5,7 @@ platform. It is written for developers and operators.
 
 ## 1. Overview
 
-PUST-Election is an online voting platform for Puntland State University
+PUST-Election is an online voting platform for Puntland University of Science & Technology
 student-union elections. Two audiences exist:
 
 - **Voters (public, unauthenticated)** — view candidates, enter a one-time
