@@ -117,7 +117,7 @@ export default function VoteId() {
       const { error } = await supabase
         .from('voiteid_id_db')
         .delete()
-        .or(`c_id.eq.${deleteTarget},id.eq.${deleteTarget}`)
+        .eq('c_id', deleteTarget)
 
       if (error) throw error
 
