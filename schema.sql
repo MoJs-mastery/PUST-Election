@@ -53,31 +53,19 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 );
 
 -- ========================================================
--- RLS FIX: DISABLE ROW LEVEL SECURITY & GRANT FULL PUBLIC POLICIES
+-- RLS SECURITY (REQUIRED - DO NOT DISABLE)
 -- ========================================================
-
--- Disable Row Level Security (RLS) completely on all tables
-ALTER TABLE IF EXISTS public.depadrments_depadrments_db DISABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.musharax_musharax_db DISABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.voiteid_id_db DISABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.codbixiye_codbixiye_db DISABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS public.profiles DISABLE ROW LEVEL SECURITY;
-
--- Create Permissive RLS Policies (in case RLS is kept enabled in Supabase settings)
-DROP POLICY IF EXISTS "Allow public full access depadrments" ON public.depadrments_depadrments_db;
-CREATE POLICY "Allow public full access depadrments" ON public.depadrments_depadrments_db FOR ALL USING (true) WITH CHECK (true);
-
-DROP POLICY IF EXISTS "Allow public full access musharax" ON public.musharax_musharax_db;
-CREATE POLICY "Allow public full access musharax" ON public.musharax_musharax_db FOR ALL USING (true) WITH CHECK (true);
-
-DROP POLICY IF EXISTS "Allow public full access voiteid" ON public.voiteid_id_db;
-CREATE POLICY "Allow public full access voiteid" ON public.voiteid_id_db FOR ALL USING (true) WITH CHECK (true);
-
-DROP POLICY IF EXISTS "Allow public full access codbixiye" ON public.codbixiye_codbixiye_db;
-CREATE POLICY "Allow public full access codbixiye" ON public.codbixiye_codbixiye_db FOR ALL USING (true) WITH CHECK (true);
-
-DROP POLICY IF EXISTS "Allow public full access profiles" ON public.profiles;
-CREATE POLICY "Allow public full access profiles" ON public.profiles FOR ALL USING (true) WITH CHECK (true);
+-- Row Level Security is NOT disabled in this file.
+--
+-- After creating the tables, ALWAYS run the hardening migration:
+--      supabase/migrations/202609180001_security_hardening.sql
+-- It enables RLS on all tables, creates the SECURITY DEFINER helpers
+-- (is_superuser, cast_vote, validate_voting_code), replaces all policies
+-- and bootstraps public.profiles from auth.users.
+--
+-- NOTE: The old permissive policies ("Allow public full access ...") and
+-- the DISABLE ROW LEVEL SECURITY statements were removed from this file.
+-- Run the migration above instead.
 
 -- ========================================================
 -- STORAGE: CANDIDATE IMAGES
@@ -101,26 +89,12 @@ CREATE POLICY "candidate-images-public-read"
 ON storage.objects FOR SELECT
 USING (bucket_id = 'candidate-images');
 
--- Logged-in admins can upload candidate images
-DROP POLICY IF EXISTS "candidate-images-authenticated-upload" ON storage.objects;
-CREATE POLICY "candidate-images-authenticated-upload"
-ON storage.objects FOR INSERT
-TO authenticated
-WITH CHECK (bucket_id = 'candidate-images');
-
--- Logged-in admins can delete (and update) uploaded candidate images
-DROP POLICY IF EXISTS "candidate-images-authenticated-delete" ON storage.objects;
-CREATE POLICY "candidate-images-authenticated-delete"
-ON storage.objects FOR DELETE
-TO authenticated
-USING (bucket_id = 'candidate-images');
-
-DROP POLICY IF EXISTS "candidate-images-authenticated-update" ON storage.objects;
-CREATE POLICY "candidate-images-authenticated-update"
-ON storage.objects FOR UPDATE
-TO authenticated
-USING (bucket_id = 'candidate-images')
-WITH CHECK (bucket_id = 'candidate-images');
+-- NOTE: Write policies (upload / update / delete) are intentionally NOT
+-- created here. They live in the hardening migration so they are
+-- superuser-gated and path/file-type restricted:
+--      supabase/migrations/202609180001_security_hardening.sql
+-- (Any old "candidate-images-authenticated-upload" / -delete / -update
+-- policies are dropped and replaced with the secure ones by that file.)
 
 -- ========================================================
 -- FIX: ALLOW CANDIDATE DELETION (FK CASCADE)

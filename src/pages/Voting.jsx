@@ -1,13 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { toast } from 'react-toastify'
 import { supabase } from '../supabaseClient'
 import CustomSelect from '../components/CustomSelect'
 
 export default function Voting() {
   const [data, setData] = useState({ candidates: [], departments: [] })
   const [loading, setLoading] = useState(true)
-  const [toasts, setToasts] = useState([])
-  const toastId = useRef(0)
 
   const [selectedCandidate, setSelectedCandidate] = useState(null)
   const [voteModal, setVoteModal] = useState(false)
@@ -58,9 +57,8 @@ export default function Voting() {
   }
 
   function showVoteToast(type, message) {
-    const id = ++toastId.current
-    setToasts((t) => [...t, { id, type, message }])
-    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 4000)
+    const fn = type === 'success' ? toast.success : type === 'warn' ? toast.warning : toast.error
+    fn(message, { autoClose: 4000 })
   }
 
   function closeVoteModal() {
@@ -94,23 +92,14 @@ export default function Voting() {
     setIdState('spin')
     setIdMsg('')
     try {
-      const { data: vRecord, error } = await supabase
-        .from('voiteid_id_db')
-        .select('*')
-        .eq('c_id', voteId.trim().toUpperCase())
-        .maybeSingle()
+      const { data: ok, error } = await supabase.rpc('validate_voting_code', {
+        p_voting_code: voteId.trim().toUpperCase(),
+      })
 
-      if (error || !vRecord) {
+      if (error || !ok) {
         setIdState('err')
-        setIdMsg('Ma aha ID cod bixin oo sax ah.')
-        showVoteToast('error', 'Ma aha ID cod bixin oo sax ah.')
-        return
-      }
-
-      if (vRecord.is_used) {
-        setIdState('err')
-        setIdMsg('Codkii hore ayaa la adeegsaday.')
-        showVoteToast('warn', 'Codkii hore ayaa la adeegsaday.')
+        setIdMsg('ID-gaagu waa khalad ama waa la isticmaalay.')
+        showVoteToast('warn', 'ID-gaagu waa khalad ama waa la isticmaalay.')
         return
       }
 
@@ -159,43 +148,62 @@ export default function Voting() {
     setSubmitting(true)
     const upperId = voteId.trim().toUpperCase()
     try {
-      // 1. Atomically mark ID as used (prevents double-voting race condition)
-      const { data: markedRows, error: markErr } = await supabase
-        .from('voiteid_id_db')
-        .update({ is_used: true })
-        .eq('c_id', upperId)
-        .eq('is_used', false)
-        .select()
+      // 1. Server-side secure RPC: validates the code, locks it against
+      //    double-spending, checks candidate + department, and records the
+      //    vote + marks the code used in ONE transaction.
+      const deptObj = data.departments.find(d => (d.d_name || d.name || d) === deptValue)
+      const votePayload = {
+        p_voting_code: upperId,
+        p_candidate_id: selectedCandidate.id,
+        p_department_id: deptObj?.id || deptValue,
+        p_gender: genderValue,
+      }
 
-      if (markErr || !markedRows || markedRows.length === 0) {
+      let status
+      const edgeUrl = import.meta.env.VITE_CAST_VOTE_URL
+      if (edgeUrl) {
+        // Rate-limited path: Supabase Edge Function (deploy per docs/SECURITY.md)
+        const res = await fetch(edgeUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(votePayload),
+        })
+        const json = await res.json().catch(() => ({}))
+        if (!res.ok) {
+          throw new Error(json.message || 'Khalad ayaa dhacay, isku day markale.')
+        }
+        status = json.ok === true ? 'ok' : (json.code || 'VOTE_FAILED')
+      } else {
+        const { data, error } = await supabase.rpc('cast_vote', votePayload)
+        if (error) throw error
+        status = data
+      }
+
+      if (status === 'ok') {
         setSubmitting(false)
+        setSuccessCandidate(selectedCandidate.m_name || '')
         setConfirmModal(false)
-        setVoteModal(true)
-        setIdState('err')
-        setIdMsg('Vote ID is invalid or already used.')
-        showVoteToast('error', 'Vote ID is invalid or already used.')
+        setSuccessModal(true)
+        showVoteToast('success', `Waxaad u codeysay: ${selectedCandidate.m_name || ''}`)
         return
       }
 
-      // 2. Insert vote into codbixiye_codbixiye_db
-      const deptObj = data.departments.find(d => (d.d_name || d.name || d) === deptValue)
-      const votePayload = {
-        c_id_id: upperId,
-        c_musharax_id: selectedCandidate.id,
-        c_department_id: deptObj?.id || deptValue,
-        c_gender: genderValue,
-      }
-      const { error: voteErr } = await supabase
-        .from('codbixiye_codbixiye_db')
-        .insert([votePayload])
-
-      if (voteErr) throw voteErr
-
       setSubmitting(false)
-      setSuccessCandidate(selectedCandidate.m_name || '')
       setConfirmModal(false)
-      setSuccessModal(true)
-      showVoteToast('success', `Waxaad u codeysay: ${selectedCandidate.m_name || ''}`)
+      setVoteModal(true)
+      const statusMsg = {
+        INVALID_VOTING_CODE: 'Vote ID-kagu kuma jiro nidaamka.',
+        VOTING_CODE_ALREADY_USED: 'Vote ID-gaas horay ayaa loo isticmaalay.',
+        INVALID_CANDIDATE: 'Musharaxa lama helin.',
+        CANDIDATE_NOT_ALLOWED: 'Musharaxan cod laguma qaadi karo.',
+        INVALID_DEPARTMENT: 'Waaxda (waxaha) lama helin.',
+        INVALID_GENDER: 'Jinsiga lama aqoonsan.',
+        VOTE_FAILED: 'Khalad ayaa dhacay, isku day markale.',
+      }
+      const msg = statusMsg[status] || 'Khalad ayaa dhacay, isku day markale.'
+      setIdState('err')
+      setIdMsg(msg)
+      showVoteToast('error', msg)
     } catch (err) {
       setSubmitting(false)
       setConfirmModal(false)
@@ -230,15 +238,6 @@ export default function Voting() {
 
   return (
     <div className="vote-page">
-      <div className="vote-toast-container">
-        {toasts.map((t) => (
-          <div key={t.id} className={`vote-toast ${t.type}`}>
-            <i className={`fa-solid ${t.type === 'success' ? 'fa-circle-check' : t.type === 'warn' ? 'fa-triangle-exclamation' : 'fa-circle-xmark'}`} />
-            <span>{t.message}</span>
-          </div>
-        ))}
-      </div>
-
       <nav className="navbar">
         <Link to="/" className="nav-brand" style={{ textDecoration: 'none', cursor: 'pointer', color: 'inherit' }}>
           <div className="nav-logo">

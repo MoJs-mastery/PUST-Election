@@ -6,7 +6,7 @@ import ConfirmDeleteModal from '../components/ConfirmDeleteModal.jsx'
 import { formatDateTime } from '../utils'
 
 export default function ManageAdmin() {
-  const { user } = useAuth()
+  const { user, is_superuser } = useAuth()
   const { showToast } = useToast()
   const [data, setData] = useState({ admins: [] })
   const [loading, setLoading] = useState(true)
@@ -17,7 +17,7 @@ export default function ManageAdmin() {
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [saving, setSaving] = useState(false)
 
-  if (user && !user.is_superuser) {
+  if (user && !is_superuser) {
     return (
       <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
         <h3>Ma haysatid ogolaansho</h3>

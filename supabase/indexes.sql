@@ -24,3 +24,15 @@ CREATE INDEX IF NOT EXISTS idx_voiteid_is_used
 -- Candidates: filter/aggregate by department
 CREATE INDEX IF NOT EXISTS idx_musharax_department_id
     ON public.musharax_musharax_db (m_depadrments_id);
+
+-- Candidates: public voting page lists only allowed candidates
+CREATE INDEX IF NOT EXISTS musharax_m_if_allowed_idx
+    ON public.musharax_musharax_db (m_if_allowed);
+
+-- Vote log: "recent votes" ordering on the dashboard / tables
+CREATE INDEX IF NOT EXISTS codbixiye_created_at_idx
+    ON public.codbixiye_codbixiye_db (created_at);
+
+-- Profiles: is_superuser() / admin listing lookups
+CREATE INDEX IF NOT EXISTS profiles_is_superuser_idx
+    ON public.profiles (is_superuser);

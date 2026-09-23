@@ -2413,3 +2413,36 @@ textarea.form-input {
     transform: scale(1);
   }
 }
+
+/* ============ REACT-TOASTIFY THEME OVERRIDES ============ */
+:root {
+  --toastify-color-light: #ffffff;
+  --toastify-color-dark: var(--color-surface, #1e293b);
+  --toastify-color-info: var(--color-accent, #2855ce);
+  --toastify-color-success: var(--color-accent-2, #2cb22b);
+  --toastify-color-warning: #f59e0b;
+  --toastify-color-error: #ef4444;
+  --toastify-toast-width: 360px;
+  --toastify-text-color-light: #0f172a;
+}
+
+.app-toast {
+  font-family: var(--font-sans, inherit);
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.app-toast .Toastify__toast-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.app-toast .Toastify__close-button {
+  color: var(--color-slate-400);
+}
+
+.app-toast-body {
+  font-size: 0.9rem;
+  font-weight: 500;
+}

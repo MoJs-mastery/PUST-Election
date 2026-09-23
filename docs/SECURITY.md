@@ -10,81 +10,128 @@ are made.
 
 ## 1. Implemented controls
 
-### Authentication
-- Supabase Auth (GoTrue) email/password. Passwords are hashed by Supabase
-  (never in our code or DB).
-- Username-only login convenience maps to `<username>@pelection.com` (documented
-  behavior, not a bypass — login still verifies password).
-- Sessions managed by Supabase (JWT); `signOut` invalidates the session.
-- No cookies set by our app (token in memory/localStorage by Supabase client).
+### Database row-level security (RLS) — applied by migration
+`supabase/migrations/202609180001_security_hardening.sql` (run in the Supabase
+SQL Editor) enables RLS on **every** table and replaces all old permissive
+policies:
 
-### Authorization / access control
-- Admin SPA routes guarded by `AdminLayout` (redirects to login).
-- Superuser-only page (`ManageAdmin`) checks `user.is_superuser` client-side.
-- **Server-side enforcement is delegated to Supabase RLS.** This is currently
-  the weak point (see Risks): tables have RLS disabled with permissive policies.
-  `supabase/rls_hardening.sql` is provided to enable and scope it.
+| Table | anon (public voter) | authenticated (admin) |
+|-------|--------------------|------------------------|
+| `depadrments_depadrments_db` | SELECT only | full CRUD — superuser only |
+| `musharax_musharax_db` | SELECT where `m_if_allowed = true` | full CRUD — superuser only |
+| `voiteid_id_db` | **no access** | full CRUD — superuser only |
+| `codbixiye_codbixiye_db` | **no access** | full CRUD — superuser only |
+| `profiles` | **no access** | self read/update; admin full |
 
-### Input validation
-- Forms validate required fields before submit (client-side).
-- Voting ID constrained client-side (length, uppercase normalization).
-- File uploads: type (`image/*`), size (≤ 4 MB), safe generated filename
-  (`candidates/<timestamp>-<random>.<ext>`), stored in Supabase Storage (never
-  on the app server), never executed, served read-only.
-- Server-side validation is provided by Postgres constraints (NOT NULL, UNIQUE)
-  and would be strengthened by RLS policies.
+- No `USING (true) WITH CHECK (true)` write policies remain. No
+  `DISABLE ROW LEVEL SECURITY` exists anywhere (`schema.sql` and
+  `supabase/rls_hardening.sql` were cleaned — the latter now just points to
+  the migration).
+- Anonymous table access to `voiteid_id_db`, `codbixiye_codbixiye_db` and
+  `profiles` was additionally revoked as defense in depth (privilege).
 
-### Data
-- No plaintext secrets in code. `.env` ignored; `.env.example` documents vars.
-- Vote IDs are stored once-used via `is_used` + UNIQUE `c_id`.
-- FK constraints keep referential integrity; candidate delete cascade handled.
+### Server-authoritative admin flag — `public.is_superuser()`
+- SECURITY DEFINER (ignores RLS, reads the protected `profiles` table), so the
+  result **cannot** be forged by the client.
+- The frontend no longer trusts `user_metadata.is_superuser`. `src/auth.jsx`
+  calls `supabase.rpc('is_superuser')`; `AdminLayout` renders a "no access"
+  screen (not the dashboard) for anyone who is not superuser.
+- Self-promotion is impossible: the profiles `UPDATE`/`INSERT` policies
+  re-check the stored flag via `is_superuser()` inside `WITH CHECK`.
 
-### Storage
-- Public bucket `candidate-images`; write/delete restricted to authenticated
-  admins via storage policies in `schema.sql`.
-- Deleting a candidate removes its stored image too.
+### Secure voting — `public.cast_vote()` (the ONLY ballot write path)
+- SECURITY DEFINER, `FOR UPDATE` lock on the voting-code row ⇒ two concurrent
+  requests on the same code serialize and cannot double-spend it.
+- Validates everything server-side in one transaction: code exists, code not
+  used, candidate exists, candidate allows votes, department exists, gender
+  is `Male`/`Female`.
+- Atomically inserts the vote AND consumes the code. Failures return app-level
+  codes (`INVALID_VOTING_CODE`, `VOTING_CODE_ALREADY_USED`,
+  `INVALID_CANDIDATE`, `CANDIDATE_NOT_ALLOWED`, `INVALID_DEPARTMENT`,
+  `INVALID_GENDER`, `VOTE_FAILED`).
+- `public.validate_voting_code()` gives voters a safe boolean check ("is my
+  ID still usable?") without revealing whether a code exists vs. already used
+  (no enumeration oracle).
 
-### Frontend
-- React escapes all rendered values (XSS-safe by default — no
-  `dangerouslySetInnerHTML`).
-- Confirmation dialogs for destructive actions.
-- Loading / error / empty states on all data pages.
+### Storage hardening
+- Write/update/delete policies now require `is_superuser()` **and** a path
+  inside `candidates/` **and** an image extension (`png/jpg/jpeg/webp`).
+- Public read stays (images are static, served read-only from Storage CDN).
+- Bucket limits enforced: 4 MB max, MIME allow-list.
+
+### Edge Function rate limiting (optional, recommended)
+- `supabase/functions/cast-vote/index.ts` adds a per-IP sliding-window rate
+  limit (10 votes/min) in front of `cast_vote()`.
+- Client uses it when `VITE_CAST_VOTE_URL` is set; otherwise it falls back to
+  the RPC (still secure, just without the IP throttle).
+
+### Security headers (static host)
+`vercel.json` sets CSP, `X-Content-Type-Options: nosniff`, `Referrer-Policy`,
+`X-Frame-Options: DENY`, and a `Permissions-Policy` that disables
+geolocation/camera/mic/payment/usb. The CSP allow-lists only: `'self'`,
+Google Fonts, the Font Awesome CDN, and the Supabase API + Realtime wss.
+
+### Data constraints & indexes
+CHECK constraints that match existing production data (candidate gender in
+`lab`/`dhadig`, vote gender in `Male`/`Female`, non-blank names/IDs, image
+URL format), plus indexes for the policy-heavy query paths.
+
+### Profiles bootstrap
+`public.profiles` was empty (0 rows) — the migration imports existing
+`auth.users` with `is_superuser = FALSE` so NOBODY is director-level by
+default. The owner must promote the correct account manually (see migration
+footer / checklist).
 
 ## 2. Threats reviewed
 
 | Threat | Mitigation |
 |--------|-----------|
-| SQL injection | PostgREST parameterized queries only; no raw SQL from client |
+| SQL injection | PostgREST parameterized queries; RPCs use parameterized PL/pgSQL |
 | XSS | React auto-escaping; no `dangerouslySetInnerHTML` |
 | CSRF | Supabase REST uses bearer JWTs, not cookies |
-| IDOR / broken access control | **Not fully mitigated** until RLS hardening is applied (see Risks) |
-| Brute-force login | Supabase Auth rate limiting; add stronger limits before public launch |
-| Malicious file upload | Type/size validation + storage-only policy + safe filenames |
-| Path traversal | No server-side file paths involved (object storage) |
-| Sensitive data exposure | Anon key is public by design; **all** enforcement must be server-side |
+| IDOR / broken access control | RLS on every table; anon can only SELECT public lists + cast via RPC |
+| Brute-force voting-ID abuse | `cast_vote` validates + marks-used server-side; optional edge rate limit |
+| Vote double-spending | `FOR UPDATE` row lock + `is_used` consumed atomically in `cast_vote` |
+| Privilege escalation (self → admin) | Profiles policies + `is_superuser()` re-check; client metadata ignored |
+| Malicious file upload | Superuser-only write policy + path/folder check + extension allow-list + 4 MB limit |
+| Path traversal | Object storage, no server-side file paths |
+| Sensitive data exposure | Sensitive tables have **no** anon grants/policies |
 | Open redirects | No external redirect logic in app |
 
-## 3. Remaining risks (must fix before public production launch)
+## 3. Remaining risks / human actions required (important)
 
-1. **RLS disabled + full anon access (HIGH).** Today the anon key can read
-   every table including the full vote log and write any row. The app only
-   *uses* a safe subset, but nothing enforces that. Fix: run
-   `supabase/rls_hardening.sql`, then verify:
-   - anon can `SELECT` departments/candidates, verify + mark-used a voting ID,
-     and `INSERT` a vote — but **cannot** read `codbixiye_codbixiye_db`
-     or create/edit candidates/codes.
-   - authenticated admin can perform all management operations.
-2. **No per-endpoint rate limiting (MEDIUM).** The anon key is unthrottled.
-   Enable Supabase rate limiting or gate vote submission behind an Edge
-   Function with IP + voting-ID rate limits.
-3. **Client-side-only superuser check (MEDIUM).** `ManageAdmin`'s superuser
-   gate is cosmetic; the DB must reject non-superusers. Add an `is_superuser`
-   check enforced via RLS policies (helper function using `auth.jwt()` claims).
-4. **No email delivery / verification (LOW-MEDIUM).** Admin creation sends no
-   verification/password-reset email today. Document or wire GoTrue mailer.
-5. **No dependency scanning (LOW).** Add `npm audit` to CI.
-6. **No CSP/security headers configured (LOW).** Add CSP via the static host
-   (or emailJS placeholder) and `X-Content-Type-Options: nosniff`.
+1. **Run the migration (HIGH, manual).** You MUST paste
+   `supabase/migrations/202609180001_security_hardening.sql` into the Supabase
+   SQL Editor and run it. Until then RLS is still disabled and the anon key
+   can read everything.
+2. **Promote YOUR admin account (HIGH, manual).** After the migration, run:
+   ```sql
+   update public.profiles set is_superuser = true where email = 'YOUR_EMAIL';
+   ```
+   Everyone else stays non-superuser. Prefer a SMALL admin team — anyone you
+   promote can promote others.
+3. **Turn OFF open sign-ups (MEDIUM, manual).** Supabase Dashboard →
+   Authentication → Providers → *Allow new user sign-ups* OFF. Otherwise
+   strangers can create accounts (they still can't self-promote, but it
+   removes the noise).
+4. **Edge Function is per-isolate, best-effort (LOW).** The in-memory IP
+   limiter resets on cold starts. For hardened production, back it with a KV
+   store. This is a targeted vote-abuse control; RLS/RPCs already prevent
+   invalid/duplicate votes.
+5. **No email verification/confirmation wired (LOW-MEDIUM).** Admin creation
+   sends no verification/password-reset email. Consider enabling the Supabase
+   SMTP mailer before launch.
+6. **Dependency scanning (LOW).** `npm run audit`. Current state after
+   `npm audit fix`: the high-severity `nanoid` finding is fixed
+   (react-router-dom 6.30.4 → 6.30.6). Two **moderate** react-router
+   advisories remain with no 6.x patch (only a breaking v7 upgrade). We accept
+   them because (a) the "open redirect via backslash" vector requires a
+   user-supplied destination, and every `Link`/`useNavigate` in this app is a
+   hardcoded internal path; (b) the `deserializeErrors()` constructor-injection
+   advisory only affects SSR hydration, and this app is a client-only SPA.
+   Optional: `npm audit fix --force` (upgrades to react-router-dom v7 — test
+   thoroughly before shipping).
+7. **No 100% guarantee.** As stated above, no system is "unhackable".
 
 ## 4. Secrets handling rules
 
@@ -94,15 +141,29 @@ are made.
   Supabase and server-side functions only.
 - If a secret is ever committed, rotate it immediately.
 
-## 5. Security checklist (run before each production release)
+## 5. Deployment notes for Vercel
 
-- [ ] `supabase/rls_hardening.sql` applied and anon/authenticated behavior
-      verified via REST
-- [ ] `npm audit` clean (or accepted risks documented)
+- Framework preset **Vite**; build command `npm run build`; output dir `dist`.
+- Set env vars in Vercel: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
+  (and optionally `VITE_CAST_VOTE_URL`).
+- `vercel.json` provides the SPA rewrite + security headers automatically.
+- If Vercel reports a failing check and you don't see a build log, verify the
+  env vars above and that the repo's Vercel integration points at this repo.
+
+## 6. Security checklist (run before each production release)
+
+- [ ] Migration `202609180001_security_hardening.sql` applied; verify with the
+      REST checks in `docs/SECURITY_TESTING.md`
+- [ ] Exactly the intended admins are `is_superuser = true` (`profiles` table)
+- [ ] Open sign-ups disabled in Supabase Auth settings
+- [ ] `npm run audit` clean (or accepted risks documented)
 - [ ] No `.env`, keys, or secrets in the repository or build logs
 - [ ] Candidate/vote CRUD verified as admin; voter flow verified as anonymous
 - [ ] File upload rejects non-images and >4 MB files
 - [ ] Delete candidate also removes votes and storage image
+- [ ] Anon key cannot read `voiteid_id_db`, `codbixiye_codbixiye_db`, `profiles`
+- [ ] Same vote ID twice ⇒ second attempt correctly rejected
 - [ ] Session logout invalidates correctly
-- [ ] Monitoring/error tracking configured (e.g., Sentry)
-- [ ] Host security headers applied (CSP, nosniff, frame-ancestors)
+- [ ] Security headers present on production responses (CSP, nosniff,
+      frame-ancestors)
+- [ ] Monitoring/error tracking configured (e.g., Sentry), if desired

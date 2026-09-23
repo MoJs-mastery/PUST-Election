@@ -11,13 +11,13 @@ const BASE_NAV_ITEMS = [
 ]
 
 export default function AdminLayout() {
-  const { user, loading, logout } = useAuth()
+  const { user, is_superuser, superUserChecked, loading, logout } = useAuth()
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
 
-  const NAV_ITEMS = user?.is_superuser
+  const NAV_ITEMS = is_superuser
     ? [
         BASE_NAV_ITEMS[0],
         { to: '/dashboard/manageadmin', label: 'Manage Admin', icon: 'fa-user-shield' },
@@ -25,7 +25,7 @@ export default function AdminLayout() {
       ]
     : BASE_NAV_ITEMS
 
-  if (loading) {
+  if (loading || !superUserChecked) {
     return (
       <div className="admin-loading">
         <i className="fa-solid fa-circle-notch fa-spin" style={{ color: 'var(--color-accent)' }} />
@@ -36,6 +36,43 @@ export default function AdminLayout() {
 
   if (!user) {
     return <Navigate to="/dashboard/login" state={{ from: location }} replace />
+  }
+
+  if (!is_superuser) {
+    return (
+      <div className="admin-shell center-page">
+        <main className="main-content no-access-card">
+          <div className="card">
+            <div className="card-header">
+              <div className="card-title">
+                <i className="fa-solid fa-user-shield" />
+                <h3>Ma ogola</h3>
+              </div>
+            </div>
+            <div className="card-body" style={{ textAlign: 'center' }}>
+              <p>Kuntaan (account-kaagu) ma leh ogolaansho maamul.</p>
+              <p style={{ color: 'var(--color-slate-500)' }}>
+                Haddii aad u baahan tahay gacan, la xiriir maamulka ururka.
+              </p>
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', marginTop: '1.25rem', flexWrap: 'wrap' }}>
+                <Link to="/" className="btn btn-primary">
+                  <i className="fa-solid fa-house" /> Bogga Hore
+                </Link>
+                <button
+                  className="btn btn-alt"
+                  onClick={() => {
+                    logout()
+                    navigate('/')
+                  }}
+                >
+                  <i className="fa-solid fa-right-from-bracket" /> Dib u gal
+                </button>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    )
   }
 
   return (

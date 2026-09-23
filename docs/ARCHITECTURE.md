@@ -79,14 +79,22 @@ Production indexes: `supabase/indexes.sql`.
 ## 5. Authentication & authorization
 
 - **Auth:** Supabase GoTrue (email/password). Sessions persisted automatically;
-  `useAuth()` context provides `user`, `loading`, `login`, `logout`.
+  `useAuth()` context provides `user`, `is_superuser`, `superUserChecked`,
+  `loading`, `login`, `logout`.
 - **Admin route guard:** `AdminLayout` redirects unauthenticated users to
   `/dashboard/login` (`<Navigate>`). This is a UX guard, not a security control.
-- **Real authorization:** must be enforced server-side. Today tables run with
-  RLS **disabled** and full permissive policies so the anon key can operate the
-  whole system. For production this must change: apply
-  `supabase/rls_hardening.sql` to restrict the anon key to voting operations
-  only and authenticated admins to management operations.
+- **Real authorization (server-side):** enforced with RLS + RPCs. See
+  `supabase/migrations/202609180001_security_hardening.sql`:
+  - RLS enabled on all five tables; anon access is SELECT-only on public lists.
+  - `public.is_superuser()` — SECURITY DEFINER helper the frontend calls
+    (`supabase.rpc`) instead of trusting `user_metadata`. Non-superusers get a
+    "Ma ogola" (no access) screen in `AdminLayout`.
+  - Ballots can ONLY be written through `public.cast_vote()` (locks the voting
+    code, validates, inserts + marks used atomically) and verified through
+    `public.validate_voting_code()`. Direct anon table access to
+    `voiteid_id_db` / `codbixiye_codbixiye_db` / `profiles` is revoked.
+  - Storage write policies require `is_superuser()` + `candidates/` path +
+    image extension; bucket capped at 4 MB with an image MIME allow-list.
 
 ## 6. File storage
 
@@ -110,9 +118,11 @@ Current expected limits (honest assessment):
   CDN. Multiple instances/edge deployments work without changes.
 - **Caching opportunities (not yet done):** candidate/department lists can be
   cached client-side or via Supabase's in-built CDN caching once traffic grows.
-- **Rate limiting:** Supabase does not rate-limit the anon key by default.
-  For abuse protection, enable Supabase's per-project rate limiting or move the
-  vote-submit path to a Supabase Edge Function with rate limits.
+- **Rate limiting:** voting is rate-limited at the app level via the optional
+  Edge Function `supabase/functions/cast-vote/index.ts` (per-IP sliding
+  window). Enable it by deploying the function and setting
+  `VITE_CAST_VOTE_URL`; until then `cast_vote()` RPC runs with per-IP limits
+  only at Supabase's platform level.
 
 ## 8. Deployment
 
@@ -122,8 +132,10 @@ Current expected limits (honest assessment):
   assets).
 - **Environment:** Vercel/Netlify project env vars from `.env.example` values.
 - **CI:** recommended `npm ci → npm test → npm run build → deploy`.
-- **Database changes:** run migration SQL (`schema.sql`, `supabase/*.sql`) in
-  Supabase SQL Editor before deploy; keep changes backward compatible.
+- **Database changes:** run migration SQL (`schema.sql` for tables, then
+  `supabase/migrations/202609180001_security_hardening.sql` for security; keep
+  `supabase/indexes.sql` for indexes) in the Supabase SQL Editor before
+  deploying; keep changes backward compatible.
 - **Rollback:** redeploy previous `dist/` build (immutable builds).
 
 ## 9. Monitoring & observability

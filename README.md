@@ -91,9 +91,9 @@ The `schema.sql` file in the repo root matches the live database schema. Tables:
 
 1. Admin generates voting ID codes on **Voiteid** (inserted into `voiteid_id_db`, `is_used = false`).
 2. Voter opens `/vote` and clicks **Codeeh** on a candidate.
-3. Voter enters their voting ID in the modal. The app verifies it exists and is unused (otherwise shows an error).
+3. Voter enters their voting ID in the modal. The app calls the `validate_voting_code` RPC (returns a safe boolean — a code that is invalid **or** already used both come back `false`).
 4. Voter selects department and gender, then clicks **Continue**.
-5. The confirm dialog shows the chosen candidate. Confirming inserts a row into `codbixiye_codbixiye_db` and marks the voting ID as used in `voiteid_id_db`.
+5. The confirm dialog shows the chosen candidate. Confirming calls the `cast_vote` RPC, which server-side locks the voting-code row (`FOR UPDATE`), validates the code/candidate/department/gender, and **in one transaction** inserts the ballot into `codbixiye_codbixiye_db` and marks the code used in `voiteid_id_db`. A duplicate/concurrent submit on the same code is rejected.
 6. The success screen is shown, then **Done** returns to the landing page.
 
 ## Authentication
@@ -101,8 +101,7 @@ The `schema.sql` file in the repo root matches the live database schema. Tables:
 - Login: `supabase.auth.signInWithPassword`. Entering just a username is allowed — it is converted to `<username>@pelection.com` internally.
 - Session is persisted automatically by Supabase (`getSession` + `onAuthStateChange`).
 - Logout calls `supabase.auth.signOut()`.
-- `is_superuser` is read from the user's metadata; only superusers can manage other admins.
-- Route guarding is done manually inside pages rather than with route wrappers (each admin page redirects/rejects if not authenticated).
+- `is_superuser` comes from the server (`supabase.rpc('is_superuser')`, a SECURITY DEFINER helper) — never from client metadata. Non-superusers get a "no access" screen inside `/dashboard`.
 
 ## Setup & Run Locally
 
@@ -118,7 +117,7 @@ The `schema.sql` file in the repo root matches the live database schema. Tables:
    VITE_ADMIN_PASSWORD=your-password
    ```
    (`VITE_ADMIN_*` are optional convenience values used by the seed/initial setup; all `VITE_*` values are client-visible by design.)
-3. Create the tables with the schema from `schema.sql` (run it in the Supabase SQL editor), and enable Supabase Auth.
+3. Create the tables with the schema from `schema.sql` (run it in the Supabase SQL editor), then run the **hardening migration** `supabase/migrations/202609180001_security_hardening.sql` (enables RLS + secure voting RPCs), and enable Supabase Auth. See `docs/SECURITY_TESTING.md` for the checks to run afterwards.
 4. Start the dev server:
    ```bash
    npm run dev
@@ -152,13 +151,21 @@ npm test             # run Vitest unit tests once
 npm run test:watch   # run tests in watch mode
 ```
 
-## Database & Production SQL (run in Supabase SQL Editor)
+## Database & Production SQL
+
+> **Security is applied in two steps**: `schema.sql` creates the tables and the
+> storage bucket; then **`supabase/migrations/202609180001_security_hardening.sql`**
+> MUST be run — it enables RLS on every table, creates the secure RPCs
+> (`cast_vote`, `validate_voting_code`, `is_superuser`), superuser-gated storage
+> policies, constraints, indexes, and bootstraps `profiles` from `auth.users`.
 
 | File | Purpose |
 |------|---------|
-| `schema.sql` | Full schema + RLS-permissive baseline + storage bucket + FK CASCADE fix |
+| `schema.sql` | Tables + storage bucket + FK CASCADE fix (no RLS statements) |
+| `supabase/migrations/202609180001_security_hardening.sql` | **Required**: RLS on all tables, secure voting RPCs, superuser checks, storage hardening, constraints, profiles bootstrap |
 | `supabase/indexes.sql` | Production indexes for the vote log and hot tables |
-| `supabase/rls_hardening.sql` | **Recommended for production**: enables RLS and restricts the anon key to voting only; admins get management access |
+| `supabase/rls_hardening.sql` | Superseded (warns + points to the migration) |
+| `supabase/functions/cast-vote/index.ts` | Optional Edge Function for IP rate-limited voting |
 
 ## Production Readiness Checklist
 
@@ -176,14 +183,16 @@ npm run test:watch   # run tests in watch mode
 | 10 | Confirmation on destructive actions | Done |
 | 11 | Responsive UI | Done |
 | 12 | SEO meta (title, description, OG) | Done |
-| 13 | **RLS enabled, anon scoped to voting** | **Pending — run `supabase/rls_hardening.sql`** |
-| 14 | **Rate limiting / abuse protection** | **Pending — Supabase rate limits or Edge Function** |
-| 15 | **E2E tests** | **Pending — Playwright recommended** |
-| 16 | **Monitoring / error tracking** | **Pending — Sentry + uptime checks recommended** |
-| 17 | **Security headers (CSP, nosniff)** | **Pending — configure on static host** |
-| 18 | **Backup strategy documented** | **Pending — enable Supabase PITR / daily backups** |
+| 13 | RLS enabled, anon scoped to voting | **Pending — run `supabase/migrations/202609180001_security_hardening.sql` in Supabase** |
+| 14 | Server-authoritative admin check (`is_superuser` RPC) | Code done; live after migration + promote your account |
+| 15 | Rate limiting / abuse protection | Edge Function ready — deploy + set `VITE_CAST_VOTE_URL` |
+| 16 | Security headers (CSP, nosniff, frame-ancestors) | `vercel.json` ready (applies on Vercel deploy) |
+| 17 | E2E tests | **Pending — Playwright recommended** |
+| 18 | Monitoring / error tracking | **Pending — Sentry + uptime checks recommended** |
+| 19 | Backup strategy documented | **Pending — enable Supabase PITR / daily backups** |
 
 ## Docs
 
 - `docs/ARCHITECTURE.md` — system architecture, stack rationale, scalability, deployment, monitoring.
 - `docs/SECURITY.md` — security controls, threat review, remaining risks, pre-release checklist.
+- `docs/SECURITY_TESTING.md` — step-by-step security checks to run after the migration.
