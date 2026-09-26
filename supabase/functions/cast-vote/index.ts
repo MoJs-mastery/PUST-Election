@@ -19,6 +19,9 @@
 //     Upstash Redis) keyed on IP + voting code.
 // ========================================================
 
+// Edge Runtime type declarations: defines the `Deno` global for the editor.
+import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
+
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const supabase: SupabaseClient = createClient(

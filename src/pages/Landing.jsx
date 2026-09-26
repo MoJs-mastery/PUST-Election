@@ -3,7 +3,7 @@ import { useAuth } from '../auth.jsx'
 
 export default function Landing() {
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, is_superuser } = useAuth()
 
   return (
     <div className="landing-page">
@@ -17,13 +17,22 @@ export default function Landing() {
         </div>
         <div className="landing-nav-links">
           {user ? (
-            <button className="btn btn-outline" onClick={() => navigate('/dashboard')}>
-              <i className="fa-solid fa-user-shield" /> <span className="landing-nav-btn-text">Go to Dashboard</span>
+            <button
+              className="btn btn-outline"
+              onClick={() => navigate(is_superuser ? '/dashboard' : '/candidate')}
+            >
+              <i className={`fa-solid ${is_superuser ? 'fa-user-shield' : 'fa-chart-simple'}`} />{' '}
+              <span className="landing-nav-btn-text">{is_superuser ? 'Go to Dashboard' : 'My Results'}</span>
             </button>
           ) : (
-            <button className="btn btn-outline" onClick={() => navigate('/dashboard/login')}>
-              <i className="fa-solid fa-right-to-bracket" /> <span className="landing-nav-btn-text">Admin Login</span>
-            </button>
+            <>
+              <button className="btn btn-outline" onClick={() => navigate('/login')}>
+                <i className="fa-solid fa-user-tie" /> <span className="landing-nav-btn-text">Candidate Login</span>
+              </button>
+              <button className="btn btn-outline" onClick={() => navigate('/login/admin')}>
+                <i className="fa-solid fa-right-to-bracket" /> <span className="landing-nav-btn-text">Admin Login</span>
+              </button>
+            </>
           )}
           <button className="btn btn-primary landing-vote-btn" onClick={() => navigate('/vote')}>
             <i className="fa-solid fa-check-to-slot" /> <span className="landing-nav-btn-text">Vote Now</span>

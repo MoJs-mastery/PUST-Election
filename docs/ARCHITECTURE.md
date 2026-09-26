@@ -127,15 +127,19 @@ Current expected limits (honest assessment):
 ## 8. Deployment
 
 - **Build:** `npm ci && npm run build` → `dist/`.
-- **Host:** any static host (Vercel, Netlify, Cloudflare Pages, S3+CDN).
+- **Host:** any static host (Netlify, Cloudflare Pages, S3+CDN).
   SPA fallback to `index.html` must be configured (all routes except static
   assets).
-- **Environment:** Vercel/Netlify project env vars from `.env.example` values.
+- **Environment:** host env vars from `.env.example` values.
 - **CI:** recommended `npm ci → npm test → npm run build → deploy`.
 - **Database changes:** run migration SQL (`schema.sql` for tables, then
-  `supabase/migrations/202609180001_security_hardening.sql` for security; keep
-  `supabase/indexes.sql` for indexes) in the Supabase SQL Editor before
-  deploying; keep changes backward compatible.
+  `supabase/migrations/202609180001_security_hardening.sql` for security and
+  `supabase/migrations/202609260001_candidate_portal.sql` for the candidate
+  portal; keep `supabase/indexes.sql` for indexes) in the Supabase SQL Editor
+  before deploying; keep changes backward compatible.
+- **Edge Functions:** deploy `cast-vote` (optional, rate limiting) and
+  `create-candidate-user` (candidate login accounts, service role) with the
+  Supabase CLI; the frontend only ever holds the anon key.
 - **Rollback:** redeploy previous `dist/` build (immutable builds).
 
 ## 9. Monitoring & observability

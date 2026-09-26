@@ -66,7 +66,9 @@ src/
 |-------|------|--------|
 | `/` | Landing | Public |
 | `/vote` | Voting | Public |
-| `/dashboard/login` | Admin login | Public |
+| `/login` | Candidate login | Public |
+| `/login/admin` | Admin login | Public (redirects `/dashboard/login` here) |
+| `/candidate` | Candidate portal (own results) | Signed-in candidate |
 | `/dashboard` | Dashboard | Admin |
 | `/dashboard/musharax` | Candidates | Admin |
 | `/dashboard/voiteid` | Voting IDs | Admin |
@@ -80,7 +82,7 @@ src/
 The `schema.sql` file in the repo root matches the live database schema. Tables:
 
 - **`depadrments_depadrments_db`** — departments. Columns: `id`, `d_name`.
-- **`musharax_musharax_db`** — candidates. Columns: `id`, `m_name`, `m_email`, `m_gender`, `m_depadrments_id` (FK → departments), `m_if_allowed` (block/allow), `m_joined` (creation time, required), `m_image`, `m_username`.
+- **`musharax_musharax_db`** — candidates. Columns: `id`, `m_name`, `m_email`, `m_gender`, `m_depadrments_id` (FK → departments), `m_if_allowed` (block/allow), `m_joined` (creation time, required), `m_image`, `m_username`, `auth_id` (FK → `auth.users`, links a candidate to their login account; added by the candidate-portal migration).
 - **`voiteid_id_db`** — one-time voting codes. Columns: `id`, `c_id` (unique code), `is_used`, `c_created_at`.
 - **`codbixiye_codbixiye_db`** — vote audit rows. Columns: `id`, `c_id_id` (the voting ID used), `c_musharax_id` (FK → candidates), `c_department_id` (FK → departments), `c_gender`.
 - **`profiles`** — admin metadata (used by Manage Admin, populated via Supabase Auth).
@@ -102,6 +104,7 @@ The `schema.sql` file in the repo root matches the live database schema. Tables:
 - Session is persisted automatically by Supabase (`getSession` + `onAuthStateChange`).
 - Logout calls `supabase.auth.signOut()`.
 - `is_superuser` comes from the server (`supabase.rpc('is_superuser')`, a SECURITY DEFINER helper) — never from client metadata. Non-superusers get a "no access" screen inside `/dashboard`.
+- **Candidate portal**: admins give candidates an email + password on the **Musharax** page (Add/Edit candidate). The candidate then logs in at `/login` and sees **only their own** results at `/candidate` (total votes, male/female split, per-department breakdown). RLS isolates this via the `musharax_select_own` / `codbixiye_select_own` policies in `supabase/migrations/202609260001_candidate_portal.sql`. The account is created with the `create-candidate-user` Edge Function (service role); if that function is not deployed, the page falls back to `supabase.auth.signUp` for local dev.
 
 ## Setup & Run Locally
 
@@ -117,7 +120,7 @@ The `schema.sql` file in the repo root matches the live database schema. Tables:
    VITE_ADMIN_PASSWORD=your-password
    ```
    (`VITE_ADMIN_*` are optional convenience values used by the seed/initial setup; all `VITE_*` values are client-visible by design.)
-3. Create the tables with the schema from `schema.sql` (run it in the Supabase SQL editor), then run the **hardening migration** `supabase/migrations/202609180001_security_hardening.sql` (enables RLS + secure voting RPCs), and enable Supabase Auth. See `docs/SECURITY_TESTING.md` for the checks to run afterwards.
+3. Create the tables with the schema from `schema.sql` (run it in the Supabase SQL editor), then run the **hardening migration** `supabase/migrations/202609180001_security_hardening.sql` (enables RLS + secure voting RPCs), then the **candidate portal migration** `supabase/migrations/202609260001_candidate_portal.sql`, and enable Supabase Auth. See `docs/SECURITY_TESTING.md` for the checks to run afterwards.
 4. Start the dev server:
    ```bash
    npm run dev
@@ -163,9 +166,11 @@ npm run test:watch   # run tests in watch mode
 |------|---------|
 | `schema.sql` | Tables + storage bucket + FK CASCADE fix (no RLS statements) |
 | `supabase/migrations/202609180001_security_hardening.sql` | **Required**: RLS on all tables, secure voting RPCs, superuser checks, storage hardening, constraints, profiles bootstrap |
+| `supabase/migrations/202609260001_candidate_portal.sql` | **Required for candidate login**: `auth_id` column on candidates + own-data SELECT policies |
 | `supabase/indexes.sql` | Production indexes for the vote log and hot tables |
 | `supabase/rls_hardening.sql` | Superseded (warns + points to the migration) |
 | `supabase/functions/cast-vote/index.ts` | Optional Edge Function for IP rate-limited voting |
+| `supabase/functions/create-candidate-user/index.ts` | Edge Function (service role) that creates/resets candidate login accounts |
 
 ## Production Readiness Checklist
 
@@ -186,10 +191,11 @@ npm run test:watch   # run tests in watch mode
 | 13 | RLS enabled, anon scoped to voting | **Pending — run `supabase/migrations/202609180001_security_hardening.sql` in Supabase** |
 | 14 | Server-authoritative admin check (`is_superuser` RPC) | Code done; live after migration + promote your account |
 | 15 | Rate limiting / abuse protection | Edge Function ready — deploy + set `VITE_CAST_VOTE_URL` |
-| 16 | Security headers (CSP, nosniff, frame-ancestors) | `vercel.json` ready (applies on Vercel deploy) |
-| 17 | E2E tests | **Pending — Playwright recommended** |
-| 18 | Monitoring / error tracking | **Pending — Sentry + uptime checks recommended** |
-| 19 | Backup strategy documented | **Pending — enable Supabase PITR / daily backups** |
+| 16 | Security headers (CSP, nosniff, frame-ancestors) | **Pending — apply on the hosting provider** |
+| 17 | Candidate portal (login + own results) | Code done; **pending** — run `202609260001_candidate_portal.sql`, deploy `create-candidate-user`, set `VITE_SUPABASE_FUNCTIONS_BASE` |
+| 18 | E2E tests | **Pending — Playwright recommended** |
+| 19 | Monitoring / error tracking | **Pending — Sentry + uptime checks recommended** |
+| 20 | Backup strategy documented | **Pending — enable Supabase PITR / daily backups** |
 
 ## Docs
 

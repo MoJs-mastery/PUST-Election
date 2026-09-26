@@ -736,43 +736,78 @@ textarea.form-input {
 }
 
 .image-upload-preview {
-  @apply relative w-full h-[170px] rounded-[16px] border-2 border-dashed border-white/12 bg-white/3 flex items-center justify-center overflow-hidden cursor-pointer transition-colors duration-200;
+  @apply relative w-full max-w-[230px] aspect-[3/4] rounded-[18px] border-2 border-dashed border-white/15 flex items-center justify-center overflow-hidden cursor-pointer transition-all duration-200;
+  margin: 0 auto;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(40, 85, 206, 0.16) 0%, transparent 55%),
+    radial-gradient(ellipse at 75% 80%, rgba(44, 178, 43, 0.12) 0%, transparent 55%),
+    rgba(255, 255, 255, 0.03);
 }
 
 .image-upload-preview:hover {
-  @apply border-accent/40 bg-white/5;
+  @apply border-accent/50 bg-white/5;
 }
 
 .image-upload-preview.has-image {
   @apply border-solid border-white/10 cursor-default;
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 0 0 3px rgba(40, 85, 206, 0.12);
 }
 
 .image-upload-preview img {
-  @apply w-full h-full object-cover;
+  @apply w-full h-full object-cover transition-transform duration-300;
+}
+
+.image-upload-preview.has-image:hover img {
+  transform: scale(1.02);
 }
 
 .image-upload-placeholder {
-  @apply flex flex-col items-center justify-center gap-3 text-slate-400 pointer-events-none;
+  @apply flex flex-col items-center justify-center gap-3 text-slate-300 pointer-events-none px-6 text-center;
 }
 
 .image-upload-placeholder i {
-  @apply text-[2.6rem] text-accent;
+  @apply text-[2.6rem];
+  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .image-upload-placeholder span {
-  @apply text-[0.85rem] font-semibold;
+  @apply text-[0.85rem] font-semibold text-slate-400;
 }
 
 .image-upload-overlay {
-  @apply absolute bottom-2.5 right-2.5 w-9 h-9 rounded-full bg-black/45 text-white text-sm flex items-center justify-center pointer-events-none;
+  @apply absolute bottom-2.5 right-2.5 w-9 h-9 rounded-full text-sm flex items-center justify-center pointer-events-none;
+  background: rgba(15, 23, 42, 0.75);
+  color: #f8fafc;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: opacity 0.2s ease;
+}
+
+.image-upload-preview.has-image .image-upload-overlay {
+  @apply opacity-0;
+}
+
+.image-upload-preview.has-image:hover .image-upload-overlay {
+  @apply opacity-100;
 }
 
 .image-upload-actions {
-  @apply flex items-center gap-2 flex-wrap;
+  @apply flex items-center justify-center gap-2 flex-wrap;
 }
 
 .form-upload-or {
   @apply text-[0.75rem] uppercase tracking-wide text-slate-500 font-bold text-center;
+}
+
+.field-hint {
+  @apply text-[0.72rem] text-slate-500 mt-1.5 leading-snug;
+}
+
+.optional-tag {
+  @apply text-[0.72rem] font-normal text-slate-400;
 }
 
 /* ============ TOGGLE SWITCH ============ */
@@ -1539,7 +1574,111 @@ textarea.form-input {
 }
 
 .login-footer {
-  @apply mt-7 text-[#475569] text-[0.78rem] flex items-center justify-center gap-1.5;
+  @apply mt-7 text-slate-400 text-[0.78rem] flex items-center justify-center gap-1.5;
+}
+
+.login-switch {
+  @apply mt-3 text-slate-400 text-[0.78rem] text-center;
+}
+
+/* ============ CANDIDATE PORTAL ============ */
+.cand-portal-center {
+  @apply flex flex-col items-center justify-center gap-4 py-10 text-slate-300;
+}
+
+.login-btn-style {
+  @apply border-none;
+  background: linear-gradient(135deg, #2855ce, #1d3fa8);
+  color: #fff;
+  border-radius: 14px;
+  padding: 0.85rem 1.6rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  transition: all 0.25s;
+  box-shadow: 0 10px 25px rgba(40, 85, 206, 0.4);
+}
+.login-btn-style:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(40, 85, 206, 0.55);
+}
+
+.cand-portal {
+  @apply flex flex-col gap-5 mt-2;
+}
+
+.cand-portal-profile {
+  @apply flex items-center gap-4 rounded-2xl p-4;
+  background: linear-gradient(135deg, rgba(40, 85, 206, 0.28), rgba(44, 178, 43, 0.16));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  text-align: left;
+}
+.cand-portal-profile h2 {
+  @apply text-lg font-bold m-0;
+  color: #f8fafc;
+}
+.cand-portal-email {
+  @apply text-[0.8rem] mb-2;
+  color: #94a3b8;
+}
+.cand-portal-avatar {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 8px 20px rgba(40, 85, 206, 0.35);
+  flex-shrink: 0;
+}
+.cand-portal-avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  background: linear-gradient(135deg, #2855ce, #2cb22b);
+  color: #fff;
+}
+
+.cand-portal-stats {
+  @apply grid grid-cols-3 gap-3;
+}
+.cand-portal-stats .stat-card {
+  @apply rounded-2xl p-4;
+}
+
+.cand-portal-dept {
+  @apply rounded-2xl p-4 bg-white/4 text-left;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.cand-portal-dept h3 {
+  @apply text-sm font-semibold mb-3 text-slate-100;
+}
+.cand-portal-dept-row {
+  @apply flex items-center gap-2 py-1.5 text-[0.82rem] text-slate-300;
+}
+.cand-portal-dept-row span {
+  width: 34%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+.cand-portal-dept-row b {
+  width: 38px;
+  text-align: right;
+  color: #f8fafc;
+}
+.cand-portal-dept-bar {
+  @apply flex-1 h-2.5 rounded-full overflow-hidden;
+  background: rgba(255, 255, 255, 0.14);
+}
+.cand-portal-dept-bar div {
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #2855ce, #2cb22b);
+  transition: width 0.6s ease;
+}
+
+.cand-portal-actions {
+  @apply flex items-center justify-center gap-3;
 }
 
 /* ============ NOT FOUND PAGE ============ */

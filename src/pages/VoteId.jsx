@@ -133,9 +133,11 @@ export default function VoteId() {
 
   async function handleExport() {
     try {
-      const exportData = filtered.map((item) => ({
+      // Export ONLY unused (available) IDs — used ones are excluded automatically.
+      const unusedOnly = data.all_ids.filter((item) => !item.is_used)
+      const exportData = unusedOnly.map((item) => ({
         'Vote ID': item.c_id,
-        'Status': item.is_used ? 'Used' : 'Available',
+        'Status': 'Available',
         'Created At': item.created_at || '',
       }))
 
@@ -152,7 +154,7 @@ export default function VoteId() {
       document.body.appendChild(link)
       link.click()
       link.remove()
-      showToast('success', 'File-ka waa la soo dejiyay.')
+      showToast('success', `${unusedOnly.length} Vote ID (unused) ayaa la soo dejiyay.`)
     } catch {
       showToast('error', 'Waa khalad, isku day markale.')
     }

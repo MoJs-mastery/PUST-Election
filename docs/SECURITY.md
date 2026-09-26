@@ -66,15 +66,37 @@ policies:
   the RPC (still secure, just without the IP throttle).
 
 ### Security headers (static host)
-`vercel.json` sets CSP, `X-Content-Type-Options: nosniff`, `Referrer-Policy`,
+Recommended (apply on whichever host serves the build): CSP,
+`X-Content-Type-Options: nosniff`, `Referrer-Policy`,
 `X-Frame-Options: DENY`, and a `Permissions-Policy` that disables
 geolocation/camera/mic/payment/usb. The CSP allow-lists only: `'self'`,
 Google Fonts, the Font Awesome CDN, and the Supabase API + Realtime wss.
+Also configure an SPA fallback to `index.html` so client-side routes
+(`/login`, `/vote`, `/candidate`, `/dashboard/*`) do not 404 on refresh.
 
 ### Data constraints & indexes
 CHECK constraints that match existing production data (candidate gender in
 `lab`/`dhadig`, vote gender in `Male`/`Female`, non-blank names/IDs, image
 URL format), plus indexes for the policy-heavy query paths.
+
+### Candidate portal (own-results isolation)
+- Candidates sign in at `/login` and are shown **only their own** data at
+  `/candidate`. Isolation is enforced by RLS policies from
+  `supabase/migrations/202609260001_candidate_portal.sql`:
+  - `musharax_select_own` — a candidate can SELECT only the candidate row
+    where `auth_id = auth.uid()`.
+  - `codbixiye_select_own` — a candidate can SELECT only votes where
+    `c_musharax_id` equals their own candidate id.
+  - No insert/update/delete grants to `authenticated` on these tables beyond
+    what admins hold — even a candidate's own row is read-only client-side
+    (edits happen through the admin dashboard).
+- Login accounts are created/reset by the Edge Function
+  `supabase/functions/create-candidate-user/index.ts` with the **service
+  role**, never from the client. The function verifies the caller is a
+  superuser (via `profiles.is_superuser`) before acting; it also sets
+  `email_confirm = true` so candidates need no confirmation email.
+- The service role key is an Edge Function environment variable only — it is
+  never shipped to the browser.
 
 ### Profiles bootstrap
 `public.profiles` was empty (0 rows) — the migration imports existing
@@ -141,14 +163,14 @@ footer / checklist).
   Supabase and server-side functions only.
 - If a secret is ever committed, rotate it immediately.
 
-## 5. Deployment notes for Vercel
+## 5. Deployment notes
 
-- Framework preset **Vite**; build command `npm run build`; output dir `dist`.
-- Set env vars in Vercel: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
-  (and optionally `VITE_CAST_VOTE_URL`).
-- `vercel.json` provides the SPA rewrite + security headers automatically.
-- If Vercel reports a failing check and you don't see a build log, verify the
-  env vars above and that the repo's Vercel integration points at this repo.
+- Build: `npm run build` → static `dist/`.
+- Host the `dist/` folder on any static host; configure the SPA fallback to
+  `index.html` and the security headers (see "Security headers" above) on that
+  host.
+- Set env vars on the host: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
+  (and optionally `VITE_CAST_VOTE_URL`, `VITE_SUPABASE_FUNCTIONS_BASE`).
 
 ## 6. Security checklist (run before each production release)
 

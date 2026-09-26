@@ -108,6 +108,13 @@ export default function Login() {
         <p className="login-footer">
           <i className="fa-solid fa-shield-halved" /> PUST-Election Admin Panel
         </p>
+
+        <p className="login-switch">
+          Ma musharax baa tahay?{' '}
+          <span style={{ cursor: 'pointer', color: 'var(--color-accent)', fontWeight: 600 }} onClick={() => navigate('/login')}>
+            Candidate Login
+          </span>
+        </p>
       </div>
     </div>
   )

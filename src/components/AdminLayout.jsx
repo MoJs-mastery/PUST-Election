@@ -35,7 +35,7 @@ export default function AdminLayout() {
   }
 
   if (!user) {
-    return <Navigate to="/dashboard/login" state={{ from: location }} replace />
+    return <Navigate to="/login/admin" state={{ from: location }} replace />
   }
 
   if (!is_superuser) {

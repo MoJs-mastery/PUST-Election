@@ -1,9 +1,11 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './auth.jsx'
 import { ToastProvider } from './toast.jsx'
 import AdminLayout from './components/AdminLayout.jsx'
 import Voting from './pages/Voting.jsx'
 import Login from './pages/Login.jsx'
+import CandidateLogin from './pages/CandidateLogin.jsx'
+import CandidatePortal from './pages/CandidatePortal.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Musharax from './pages/Musharax.jsx'
 import VoteId from './pages/VoteId.jsx'
@@ -20,7 +22,10 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/vote" element={<Voting />} />
-          <Route path="/dashboard/login" element={<Login />} />
+          <Route path="/login" element={<CandidateLogin />} />
+          <Route path="/login/admin" element={<Login />} />
+          <Route path="/dashboard/login" element={<Navigate to="/login/admin" replace />} />
+          <Route path="/candidate" element={<CandidatePortal />} />
           <Route path="/dashboard" element={<AdminLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="musharax" element={<Musharax />} />
