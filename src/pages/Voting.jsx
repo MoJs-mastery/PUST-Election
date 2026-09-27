@@ -76,7 +76,7 @@ export default function Voting() {
   function handleIdInput(value) {
     const cleaned = value.replace(/[^A-Za-z0-9]/g, '').toUpperCase()
     if (cleaned !== value) {
-      showVoteToast('warn', 'Fadlan soo geli tiro iyo xarfo kaliya.')
+      showVoteToast("")
     }
     setVoteId(cleaned)
     setIdState('')
