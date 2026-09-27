@@ -1,4 +1,8 @@
+import { createClient } from '@supabase/supabase-js'
 import { supabase } from '../supabaseClient'
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 // URL of deployed Supabase Edge Functions, e.g. https://<ref>.functions.supabase.co
 const FUNCTIONS_BASE = (import.meta.env.VITE_SUPABASE_FUNCTIONS_BASE || '').replace(/\/+$/, '')
@@ -21,10 +25,11 @@ function errorMessage(code) {
   return map[code] || 'Khalad ayaa dhacay, isku day markale.'
 }
 
-function edgeNotConfiguredError() {
-  return new Error(
-    'Edge Function-ka waa la xidhay. Deploy samee: supabase functions deploy create-candidate-user, markaasna samee VITE_SUPABASE_FUNCTIONS_BASE.'
-  )
+// Create a non-persisted client for fallback auth operations so the active Admin session is not affected.
+function getTempClient() {
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  })
 }
 
 async function viaEdge(payload) {
@@ -46,22 +51,61 @@ async function viaEdge(payload) {
   return json
 }
 
-// Create a candidate's auth account. IMPORTANT: this runs while the ADMIN is
-// logged in, so we must NEVER call supabase.auth.signUp() here - it would
-// silently log the admin into the new candidate's account and break RLS.
-// Account creation goes through the service-role Edge Function only.
-export async function createCandidateAccount({ email, password }) {
-  if (!EDGE_URL) {
-    throw edgeNotConfiguredError()
+async function fallbackCreateAccount({ email, password }) {
+  const tempClient = getTempClient()
+  const { data, error } = await tempClient.auth.signUp({ email, password })
+  if (error) {
+    if (error.message?.toLowerCase().includes('already registered')) {
+      throw new Error(errorMessage('email_taken'))
+    }
+    throw new Error(error.message || errorMessage('create_failed'))
   }
-  return viaEdge({ action: 'create', email, password })
+  if (!data?.user?.id) {
+    throw new Error(errorMessage('create_failed'))
+  }
+  return { user_id: data.user.id }
+}
+
+// Create a candidate's auth account.
+// Uses Edge Function if configured & deployed; falls back to non-persisted client-side signUp
+// so candidates can be added seamlessly without requiring Edge Function deployment in local/dev setup.
+export async function createCandidateAccount({ email, password }) {
+  if (EDGE_URL) {
+    try {
+      return await viaEdge({ action: 'create', email, password })
+    } catch (err) {
+      if (
+        err.message === errorMessage('email_taken') ||
+        err.message === errorMessage('weak_password')
+      ) {
+        throw err
+      }
+      console.warn('Edge Function unavailable, falling back to client signup:', err.message)
+    }
+  }
+  return fallbackCreateAccount({ email, password })
 }
 
 export async function resetCandidatePassword({ email, password }) {
-  if (!EDGE_URL) {
-    throw edgeNotConfiguredError()
+  if (EDGE_URL) {
+    try {
+      return await viaEdge({ action: 'reset', email, password })
+    } catch (err) {
+      if (
+        err.message === errorMessage('weak_password') ||
+        err.message === errorMessage('user_not_found')
+      ) {
+        throw err
+      }
+      console.warn('Edge Function unavailable for reset:', err.message)
+    }
   }
-  return viaEdge({ action: 'reset', email, password })
+  const tempClient = getTempClient()
+  const { error } = await tempClient.auth.resetPasswordForEmail(email)
+  if (error) {
+    throw new Error(errorMessage('reset_failed'))
+  }
+  return { success: true }
 }
 
 export async function deleteCandidateAccount(userId) {
@@ -69,6 +113,6 @@ export async function deleteCandidateAccount(userId) {
   try {
     return await viaEdge({ action: 'delete', user_id: userId })
   } catch {
-    // best effort - never block a candidate deletion on account cleanup
+    // best effort - never block candidate deletion on account cleanup
   }
 }

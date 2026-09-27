@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, Outlet, Navigate, useLocation, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../auth.jsx'
 
@@ -14,8 +14,40 @@ export default function AdminLayout() {
   const { user, is_superuser, superUserChecked, loading, logout } = useAuth()
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef(null)
   const location = useLocation()
   const navigate = useNavigate()
+
+  const initials = useMemo(() => {
+    const raw = user?.username || user?.email || 'A'
+    const parts = raw.replace(/[^a-zA-Z0-9]+/g, ' ').trim().split(' ').filter(Boolean)
+    if (!parts.length) return 'A'
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+    return (parts[0][0] + parts[1][0]).toUpperCase()
+  }, [user])
+
+  useEffect(() => {
+    if (!menuOpen) return
+    function onDocClick(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false)
+    }
+    function onKey(e) {
+      if (e.key === 'Escape') setMenuOpen(false)
+    }
+    document.addEventListener('mousedown', onDocClick)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDocClick)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [menuOpen])
+
+  const handleLogout = () => {
+    setMenuOpen(false)
+    logout()
+    navigate('/')
+  }
 
   const NAV_ITEMS = is_superuser
     ? [
@@ -130,26 +162,53 @@ export default function AdminLayout() {
             <Link to="/" className="toggle-btn" title="Back to Home" aria-label="Back to Home">
               <i className="fa-solid fa-house" />
             </Link>
-            <button className="toggle-btn">
+            <button className="toggle-btn" title="Notifications" aria-label="Notifications">
               <i className="fa-regular fa-bell" />
             </button>
-            <div className="user-profile">
-              <div className="avatar">{(user.username || 'A').charAt(0).toUpperCase()}</div>
-              <span>{user.username || 'Admin User'}</span>
-              <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.8rem', color: 'var(--color-slate-400)' }} />
+
+            <div className="user-menu" ref={menuRef}>
+              <button
+                className="user-menu-trigger"
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                onClick={() => setMenuOpen((o) => !o)}
+              >
+                <div className="avatar">{initials}</div>
+                <span className="user-menu-meta">
+                  <span className="user-name">{user.username || 'Admin'}</span>
+                  <span className="user-role">{is_superuser ? 'Super Admin' : 'Admin'}</span>
+                </span>
+                <i className={`fa-solid fa-chevron-down chevron${menuOpen ? ' open' : ''}`} />
+              </button>
+
+              {menuOpen && (
+                <div className="user-dropdown" role="menu">
+                  <div className="user-dropdown-head">
+                    <div className="avatar lg">{initials}</div>
+                    <div className="user-dropdown-id">
+                      <b>{user.username || 'Admin'}</b>
+                      <span>{user.email || '—'}</span>
+                    </div>
+                  </div>
+                  <div className="user-dropdown-links">
+                    <button role="menuitem" onClick={() => { setMenuOpen(false); navigate('/dashboard') }}>
+                      <i className="fa-solid fa-gauge-high" /> Dashboard
+                    </button>
+                    <button role="menuitem" onClick={() => { setMenuOpen(false); navigate('/dashboard/manageadmin') }}>
+                      <i className="fa-solid fa-user-shield" /> Manage Admin
+                    </button>
+                    <button role="menuitem" onClick={() => { setMenuOpen(false); navigate('/') }}>
+                      <i className="fa-solid fa-house" /> Bogga Hore
+                    </button>
+                  </div>
+                  <div className="user-dropdown-foot">
+                    <button className="logout" role="menuitem" onClick={handleLogout}>
+                      <i className="fa-solid fa-right-from-bracket" /> Logout
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-            <button
-              className="toggle-btn"
-              title="Logout"
-              aria-label="Logout"
-              onClick={() => {
-                logout()
-                navigate('/')
-              }}
-              style={{ textDecoration: 'none' }}
-            >
-              <i className="fa-solid fa-right-from-bracket" />
-            </button>
           </div>
         </header>
 
