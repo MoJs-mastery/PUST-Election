@@ -103,7 +103,7 @@ export default function CandidatePortal() {
           <i className="fa-solid fa-chart-simple" />
         </div>
         <h1>PUST-Election</h1>
-        <p className="login-sub">Gooddigi Musharax</p>
+        <p className="login-sub">Codadkii Musharaxa</p>
 
         {state.status === 'loading' && (
           <div className="cand-portal-center">
