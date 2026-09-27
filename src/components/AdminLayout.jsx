@@ -72,37 +72,34 @@ export default function AdminLayout() {
 
   if (!is_superuser) {
     return (
-      <div className="admin-shell center-page">
-        <main className="main-content no-access-card">
-          <div className="card">
-            <div className="card-header">
-              <div className="card-title">
-                <i className="fa-solid fa-user-shield" />
-                <h3>Ma ogola</h3>
-              </div>
-            </div>
-            <div className="card-body" style={{ textAlign: 'center' }}>
-              <p>Kuntaan (account-kaagu) ma leh ogolaansho maamul.</p>
-              <p style={{ color: 'var(--color-slate-500)' }}>
-                Haddii aad u baahan tahay gacan, la xiriir maamulka ururka.
-              </p>
-              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', marginTop: '1.25rem', flexWrap: 'wrap' }}>
-                <Link to="/" className="btn btn-primary">
-                  <i className="fa-solid fa-house" /> Bogga Hore
-                </Link>
-                <button
-                  className="btn btn-alt"
-                  onClick={() => {
-                    logout()
-                    navigate('/')
-                  }}
-                >
-                  <i className="fa-solid fa-right-from-bracket" /> Dib u gal
-                </button>
-              </div>
-            </div>
+      <div className="no-access-screen">
+        <div className="no-access-card">
+          <span className="no-access-pill">
+            <i className="fa-solid fa-lock" /> 403 / Forbidden
+          </span>
+          <div className="no-access-icon">
+            <i className="fa-solid fa-user-shield" />
           </div>
-        </main>
+          <h2>Ma ogola</h2>
+          <p className="no-access-msg">
+            Account-kaagu ma leh ogolaansho maamul — meeshan ma ka gali kartid.
+          </p>
+          <p className="no-access-hint">Haddii aad u baahan tahay gacan, la xiriir maamulka ururka.</p>
+          <div className="no-access-actions">
+            <Link to="/" className="btn btn-primary">
+              <i className="fa-solid fa-house" /> Bogga Hore
+            </Link>
+            <button
+              className="btn btn-outline"
+              onClick={() => {
+                logout()
+                navigate('/')
+              }}
+            >
+              <i className="fa-solid fa-right-from-bracket" /> Dib u gal
+            </button>
+          </div>
+        </div>
       </div>
     )
   }
