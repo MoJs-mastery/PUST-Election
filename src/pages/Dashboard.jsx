@@ -115,7 +115,7 @@ export default function Dashboard() {
   const malePct = s.male_pct || 0
   const femalePct = s.female_pct || 0
   const ringStyle = {
-    background: `conic-gradient(var(--color-accent) 0% ${malePct}%, var(--color-accent-2) ${malePct}% ${malePct + femalePct}%, rgba(255,255,255,0.08) ${malePct + femalePct}% 100%)`,
+        background: `conic-gradient(var(--color-accent) 0% ${malePct}%, var(--color-accent-2) ${malePct}% ${malePct + femalePct}%, var(--pust-border) ${malePct + femalePct}% 100%)`,
   }
 
   const stats = [
@@ -222,8 +222,8 @@ export default function Dashboard() {
                 Female <b>{s.female_count ?? 0} ({femalePct.toFixed(1)}%)</b>
               </div>
               <div className="ring-legend-item">
-                <span className="ring-dot" style={{ background: 'rgba(255,255,255,0.15)' }} />
-                <b style={{ color: '#f87171' }}>{s.total_ids - s.used_ids} ID waa la adeegsan</b>
+                <span className="ring-dot" style={{ background: 'var(--pust-border)' }} />
+                <b style={{ color: 'var(--pust-danger)' }}>{s.total_ids - s.used_ids} ID waa la adeegsan</b>
               </div>
             </div>
           </div>

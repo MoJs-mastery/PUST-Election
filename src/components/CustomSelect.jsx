@@ -23,7 +23,7 @@ export default function CustomSelect({ placeholder, options, value, onSelect, er
         className={`select-selected ${open ? 'open' : ''} ${error ? 'err' : ''}`}
         onClick={() => setOpen(!open)}
       >
-        <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.8rem', color: '#64748b' }} />
+        <i className="fa-solid fa-chevron-down" style={{ fontSize: '0.8rem', color: 'currentColor', opacity: 0.65 }} />
         <span>{selected ? selected.label : placeholder}</span>
       </div>
       <div className={`select-items ${open ? 'show' : ''}`}>

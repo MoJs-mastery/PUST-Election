@@ -116,10 +116,13 @@ The `schema.sql` file in the repo root matches the live database schema. Tables:
    ```env
    VITE_SUPABASE_URL=https://your-project.supabase.co
    VITE_SUPABASE_ANON_KEY=your-anon-key
-   VITE_ADMIN_EMAIL=your@admin.com
-   VITE_ADMIN_PASSWORD=your-password
    ```
-   (`VITE_ADMIN_*` are optional convenience values used by the seed/initial setup; all `VITE_*` values are client-visible by design.)
+   Only `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` belong in the client
+   bundle. If you need bootstrap admin credentials for a server-side setup
+   script, use **non-prefixed** names (`ADMIN_EMAIL` / `ADMIN_PASSWORD`) — any
+   `VITE_*` variable is inlined into public JavaScript at build time and is
+   readable by every visitor. Admin logins are managed through Supabase Auth,
+   not through the client.
 3. Create the tables with the schema from `schema.sql` (run it in the Supabase SQL editor), then run the **hardening migration** `supabase/migrations/202609180001_security_hardening.sql` (enables RLS + secure voting RPCs), then the **candidate portal migration** `supabase/migrations/202609260001_candidate_portal.sql`, and enable Supabase Auth. See `docs/SECURITY_TESTING.md` for the checks to run afterwards.
 4. Start the dev server:
    ```bash

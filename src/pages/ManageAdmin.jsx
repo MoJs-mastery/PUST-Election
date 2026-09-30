@@ -20,7 +20,7 @@ export default function ManageAdmin() {
   if (user && !is_superuser) {
     return (
       <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
-        <h3>Ma haysatid ogolaansho</h3>
+          <h3>Ma haysato ogolaansho</h3>
         <p>Kaliya superuser ayaa maamuli kara admin-ka.</p>
       </div>
     )

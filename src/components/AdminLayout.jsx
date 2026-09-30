@@ -110,7 +110,7 @@ export default function AdminLayout() {
       <aside className={`sidebar${collapsed ? ' collapsed' : ''}${mobileOpen ? ' mobile-open' : ''}`}>
         <div className="sidebar-header" style={{ cursor: 'pointer' }} onClick={() => navigate('/')}>
           <i className="fa-solid fa-check-to-slot logo-icon" />
-          <h2>PUST-Election</h2>
+          <h2>PUST Elections</h2>
         </div>
 
         <ul className="nav-links">
@@ -124,7 +124,7 @@ export default function AdminLayout() {
               >
                 <i className={`fa-solid ${item.icon} nav-icon`} />
                 <span className="nav-text">{item.label}</span>
-                <span className="tooltip">{item.label}</span>
+                <span className="tooltip" aria-hidden="true">{item.label}</span>
               </NavLink>
             </li>
           ))}
@@ -134,7 +134,7 @@ export default function AdminLayout() {
               <span className="nav-text" style={{ color: 'var(--color-accent-2)' }}>
                 Tag Codaynta
               </span>
-              <span className="tooltip">Tag Codaynta</span>
+              <span className="tooltip" aria-hidden="true">Tag Codaynta</span>
             </Link>
           </li>
         </ul>
@@ -151,7 +151,7 @@ export default function AdminLayout() {
             </button>
             <Link to="/" className="top-brand" title="Back to Home">
               <i className="fa-solid fa-check-to-slot" />
-              <b>PUST-Election</b>
+              <b>PUST Elections</b>
             </Link>
           </div>
 
@@ -216,3 +216,4 @@ export default function AdminLayout() {
     </div>
   )
 }
+

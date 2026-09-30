@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import { useAuth } from '../auth'
+import SiteFooter from '../components/SiteFooter'
 import { GENDER_LABEL } from '../utils'
 
 const ALLOWED_IMAGE = /^https:\/\//i
@@ -90,19 +91,13 @@ export default function CandidatePortal() {
   }
 
   return (
-    <div className="login-page" style={{ minHeight: '100vh', overflowY: 'auto' }}>
-      <div className="login-particles">
-        <span style={{ left: '10%', animationDelay: '0s' }} />
-        <span style={{ left: '30%', animationDelay: '1.5s' }} />
-        <span style={{ left: '60%', animationDelay: '2.4s' }} />
-        <span style={{ left: '85%', animationDelay: '1s' }} />
-      </div>
-
+    <div className="page-with-footer">
+    <div className="login-page" style={{ overflowY: 'auto' }}>
       <div className="login-card" style={{ width: 'min(640px, 92vw)', maxWidth: 640 }}>
-        <div className="login-logo" style={{ cursor: 'pointer' }} onClick={() => navigate('/')} title="Back to Home">
+        <Link to="/" className="login-logo" title="Back to Home" aria-label="PUST Elections — back to home">
           <i className="fa-solid fa-chart-simple" />
-        </div>
-        <h1>PUST-Election</h1>
+        </Link>
+        <h1>PUST Elections</h1>
         <p className="login-sub">Codadkii Musharaxa</p>
 
         {state.status === 'loading' && (
@@ -194,6 +189,8 @@ export default function CandidatePortal() {
           </div>
         )}
       </div>
+    </div>
+    <SiteFooter />
     </div>
   )
 }

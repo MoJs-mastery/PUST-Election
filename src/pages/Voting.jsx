@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { supabase } from '../supabaseClient'
+import SiteFooter from '../components/SiteFooter'
 import CustomSelect from '../components/CustomSelect'
 
 export default function Voting() {
@@ -237,19 +238,36 @@ export default function Voting() {
   }
 
   return (
+    <div className="page-with-footer">
     <div className="vote-page">
+      <div className="pust-topbar">
+        <div className="pust-topbar-inner">
+          <div className="pust-topbar-info">
+            <span>
+              <i className="fa-solid fa-location-dot" /> Galkayo, Puntland, Somalia
+            </span>
+            <a href="mailto:info@pust.edu.so">
+              <i className="fa-solid fa-envelope" /> info@pust.edu.so
+            </a>
+          </div>
+          <a className="pust-topbar-link" href="https://www.pust.edu.so">
+            <i className="fa-solid fa-globe" /> www.pust.edu.so
+          </a>
+        </div>
+      </div>
+
       <nav className="navbar">
         <Link to="/" className="nav-brand" style={{ textDecoration: 'none', cursor: 'pointer', color: 'inherit' }}>
           <div className="nav-logo">
             <i className="fa-solid fa-check-to-slot" />
           </div>
-          <span>PUST-Election</span>
+          <span>PUST <em>Elections</em></span>
         </Link>
         <div className="nav-stats">
-          <Link to="/" className="nav-chip" style={{ textDecoration: 'none', background: 'rgba(40, 85, 206, 0.15)', color: 'var(--color-accent)', fontWeight: 600 }}>
+          <Link to="/" className="nav-chip" aria-label="Go to home" style={{ textDecoration: 'none' }}>
             <i className="fa-solid fa-house" /> <span>Home</span>
           </Link>
-          <Link to="/dashboard" className="nav-chip" style={{ textDecoration: 'none' }}>
+          <Link to="/dashboard" className="nav-chip" aria-label="Admin dashboard" style={{ textDecoration: 'none' }}>
             <i className="fa-solid fa-user-shield" /> <span>Admin</span>
           </Link>
           <div className="nav-chip">
@@ -263,11 +281,11 @@ export default function Voting() {
 
       <header className="hero">
         <div className="hero-badge">
-          <span className="dot" style={{ width: 8, height: 8, borderRadius: '50%', background: '#2cb22b' }} />
+          <span className="dot" style={{ width: 8, height: 8, borderRadius: '50%', background: '#1B7F43' }} />
           Cod bixin &nbsp;•&nbsp; 2026
         </div>
-        <h1>Codee Musharaxaadka</h1>
-        <p>Fadlan dooro musharaxa aad rabto inaad u codsato. Ka dibna xaqiiji ID-gaaga si codkaagu u dhaqangalo.</p>
+        <h1>UCodeeh Musharaxaadga</h1>
+        <p>Fadlan dooro musharaxa aad rabto inaad u codsato. Ka dibna xaqiiji ID-gaaga si codkaaga u dhaqangalo.</p>
       </header>
 
       <main className="container">
@@ -348,7 +366,7 @@ export default function Voting() {
                 <i className="id-status fa-solid fa-spinner fa-spin" style={{ color: 'var(--color-accent)' }} />
               )}
               {idState === 'ok' && (
-                <i className="id-status fa-solid fa-circle-check" style={{ color: '#2cb22b' }} />
+                <i className="id-status fa-solid fa-circle-check" style={{ color: '#1B7F43' }} />
               )}
               {idState === 'err' && (
                 <i className="id-status fa-solid fa-circle-xmark" style={{ color: '#ef4444' }} />
@@ -434,5 +452,8 @@ export default function Voting() {
         </div>
       </div>
     </div>
+    <SiteFooter />
+    </div>
   )
 }
+
