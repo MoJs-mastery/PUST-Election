@@ -1,0 +1,4 @@
+# Netlify SPA fallback - serve index.html for every client-side route so
+# deep links and refreshes on /vote, /dashboard, /login/admin, etc. work.
+# 200 = rewrite (not a 301 redirect), so the URL stays intact.
+/*    /index.html   200

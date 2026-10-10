@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { supabase } from '../supabaseClient'
 import SiteFooter from '../components/SiteFooter'
 import CustomSelect from '../components/CustomSelect'
 
 export default function Voting() {
+  const navigate = useNavigate()
   const [data, setData] = useState({ candidates: [], departments: [] })
   const [loading, setLoading] = useState(true)
 
@@ -213,8 +214,23 @@ export default function Voting() {
     }
   }
 
+  // Called from the success modal ("Done"). The vote has already been saved
+  // by the cast_vote RPC at this point. We reset the form in-app and return to
+  // the voting route instead of a full page reload, which would 404 on hosts
+  // that don't rewrite unknown paths to index.html.
   function handleTxn() {
-    window.location.reload()
+    setSuccessModal(false)
+    setSuccessCandidate('')
+    setSelectedCandidate(null)
+    setVoteModal(false)
+    setConfirmModal(false)
+    resetVoteFields()
+    setDeptValue('')
+    setGenderValue('')
+    setDeptErr(false)
+    setGenderErr(false)
+    loadPublicData()
+    navigate('/vote', { replace: true })
   }
 
   function selectDept(dept) {
