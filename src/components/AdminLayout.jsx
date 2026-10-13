@@ -7,6 +7,7 @@ const BASE_NAV_ITEMS = [
   { to: '/dashboard/codbixiye', label: 'Codbixiye', icon: 'fa-users' },
   { to: '/dashboard/musharax', label: 'Musharax', icon: 'fa-user-tie' },
   { to: '/dashboard/voiteid', label: 'Vote ID', icon: 'fa-id-card' },
+  { to: '/dashboard/students', label: 'Students', icon: 'fa-user-graduate' },
   { to: '/dashboard/departments', label: 'Waxaha', icon: 'fa-building' },
 ]
 
@@ -109,7 +110,7 @@ export default function AdminLayout() {
       {mobileOpen && <div className="sidebar-overlay" onClick={() => setMobileOpen(false)} />}
       <aside className={`sidebar${collapsed ? ' collapsed' : ''}${mobileOpen ? ' mobile-open' : ''}`}>
         <div className="sidebar-header" style={{ cursor: 'pointer' }} onClick={() => navigate('/')}>
-          <i className="fa-solid fa-check-to-slot logo-icon" />
+          <img src="/pust-logo-ref.png" alt="PUST Logo" className="sidebar-logo-img" />
           <h2>PUST Elections</h2>
         </div>
 
@@ -150,7 +151,7 @@ export default function AdminLayout() {
               <i className="fa-solid fa-bars" />
             </button>
             <Link to="/" className="top-brand" title="Back to Home">
-              <i className="fa-solid fa-check-to-slot" />
+              <img src="/pust-logo-ref.png" alt="PUST Logo" className="top-brand-logo-img" />
               <b>PUST Elections</b>
             </Link>
           </div>

@@ -95,7 +95,7 @@ export default function CandidatePortal() {
     <div className="login-page" style={{ overflowY: 'auto' }}>
       <div className="login-card" style={{ width: 'min(640px, 92vw)', maxWidth: 640 }}>
         <Link to="/" className="login-logo" title="Back to Home" aria-label="PUST Elections — back to home">
-          <i className="fa-solid fa-chart-simple" />
+          <img src="/pust-logo-ref.png" alt="PUST Logo" className="brand-logo-img" />
         </Link>
         <h1>PUST Elections</h1>
         <p className="login-sub">Codadkii Musharaxa</p>

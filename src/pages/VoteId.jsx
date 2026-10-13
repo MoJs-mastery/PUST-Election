@@ -15,6 +15,7 @@ export default function VoteId() {
   const [quantity, setQuantity] = useState(50)
   const [saving, setSaving] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState(null)
+  const [showBulkDelete, setShowBulkDelete] = useState(false)
   const [page, setPage] = useState(1)
   const PER_PAGE = 100
   const fileRef = useRef(null)
@@ -131,6 +132,24 @@ export default function VoteId() {
     }
   }
 
+  async function deleteAllUsedIds() {
+    setSaving(true)
+    try {
+      const { error } = await supabase
+        .from('voiteid_id_db')
+        .delete()
+        .eq('is_used', true)
+      if (error) throw error
+      showToast('success', `${data.used_ids} ID oo la isticmaalay waa la tirtiray.`)
+      setShowBulkDelete(false)
+      loadData()
+    } catch (err) {
+      showToast('error', err.message || 'Waa khalad, isku day markale.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   async function handleExport() {
     try {
       // Export ONLY unused (available) IDs — used ones are excluded automatically.
@@ -222,9 +241,18 @@ export default function VoteId() {
           </h2>
           <p className="page-subtitle">Maamul ID-ga codbixinta — abuur, soo deji, ama soo geli.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setGenModal(true)}>
-          <i className="fa-solid fa-plus" /> Generate IDs
-        </button>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            className="btn btn-danger"
+            onClick={() => setShowBulkDelete(true)}
+            disabled={data.used_ids === 0}
+          >
+            <i className="fa-solid fa-trash-can" /> Delete All Used IDs
+          </button>
+          <button className="btn btn-primary" onClick={() => setGenModal(true)}>
+            <i className="fa-solid fa-plus" /> Generate IDs
+          </button>
+        </div>
       </div>
 
       <div className="stat-grid">
@@ -401,6 +429,19 @@ export default function VoteId() {
           itemName={deleteTarget}
           onCancel={() => setDeleteTarget(null)}
           onConfirm={confirmDelete}
+          saving={saving}
+        />
+      )}
+
+      {showBulkDelete && (
+        <ConfirmDeleteModal
+          title="Delete All Used IDs?"
+          description={`Tani waxay tirtirtaa dhammaan ID-yada la isticmaalay (${data.used_ids}). Ficilkan lama celcelin karo.`}
+          itemName=""
+          confirmIcon="fa-trash-can"
+          confirmLabel={`Delete ${data.used_ids} Used IDs`}
+          onCancel={() => setShowBulkDelete(false)}
+          onConfirm={deleteAllUsedIds}
           saving={saving}
         />
       )}

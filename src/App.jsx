@@ -12,6 +12,7 @@ import VoteId from './pages/VoteId.jsx'
 import Codbixiye from './pages/Codbixiye.jsx'
 import ManageAdmin from './pages/ManageAdmin.jsx'
 import Departments from './pages/Departments.jsx'
+import Students from './pages/Students.jsx'
 import NotFound from './pages/NotFound.jsx'
 import Landing from './pages/Landing.jsx'
 
@@ -30,6 +31,7 @@ export default function App() {
             <Route index element={<Dashboard />} />
             <Route path="musharax" element={<Musharax />} />
             <Route path="voiteid" element={<VoteId />} />
+            <Route path="students" element={<Students />} />
             <Route path="codbixiye" element={<Codbixiye />} />
             <Route path="manageadmin" element={<ManageAdmin />} />
             <Route path="departments" element={<Departments />} />

@@ -12,18 +12,30 @@ export default function Landing() {
       <div className="pust-topbar">
         <div className="pust-topbar-inner">
           <div className="pust-topbar-info">
-            <span>
-              <i className="fa-solid fa-location-dot" /> Galkayo, Puntland, Somalia
+            <span className="topbar-item topbar-loc" title="Campus: Galkayo, Puntland, Somalia">
+              <i className="fa-solid fa-location-dot" />
+              <span className="topbar-loc-full">Galkayo, Puntland, Somalia</span>
+              <span className="topbar-loc-short">Galkayo</span>
             </span>
-            <a href="tel:+252906821920">
-              <i className="fa-solid fa-phone" /> +252 90 682 1920
+            <a href="tel:+252906821920" className="topbar-item topbar-phone" title="Call: +252 90 682 1920">
+              <i className="fa-solid fa-phone" />
+              <span>+252 90 682 1920</span>
             </a>
-            <a href="mailto:info@pust.edu.so">
-              <i className="fa-solid fa-envelope" /> info@pust.edu.so
+            <a href="mailto:info@pust.edu.so" className="topbar-item topbar-email" title="Email: info@pust.edu.so">
+              <i className="fa-solid fa-envelope" />
+              <span>info@pust.edu.so</span>
             </a>
           </div>
-          <a className="pust-topbar-link" href="https://www.pust.edu.so">
-            <i className="fa-solid fa-globe" /> www.pust.edu.so
+          <a
+            className="pust-topbar-link"
+            href="https://www.pust.edu.so"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="PUST Official Portal"
+          >
+            <i className="fa-solid fa-globe" />
+            <span className="topbar-web-full">www.pust.edu.so</span>
+            <span className="topbar-web-short">pust.edu.so</span>
           </a>
         </div>
       </div>
@@ -32,7 +44,7 @@ export default function Landing() {
       <nav className="landing-nav">
         <Link to="/" className="landing-nav-brand" aria-label="PUST Elections — home">
           <div className="landing-nav-logo">
-            <i className="fa-solid fa-check-to-slot" />
+            <img src="/pust-logo-ref.png" alt="PUST Logo" className="brand-logo-img" />
           </div>
           <span className="landing-nav-name">
             PUST <em>Elections</em>
@@ -64,9 +76,10 @@ export default function Landing() {
         </div>
       </nav>
 
-      {/* Hero Section */}
+      {/* Hero Section — matches pust.edu.so dark navy hero banner */}
       <main className="landing-hero">
-        <div className="landing-glow" />
+        {/* Navy gradient overlay inspired by pust.edu.so */}
+        <div className="landing-hero-overlay" aria-hidden="true" />
 
         <div className="landing-hero-content">
           <div className="landing-badge">
@@ -98,10 +111,48 @@ export default function Landing() {
         </div>
       </main>
 
+      {/* How it works section */}
+      <section className="landing-steps" id="how-it-works">
+        <div className="landing-section-head">
+          <span className="landing-eyebrow">How It Works</span>
+          <h2>Simple, Secure and Transparent</h2>
+          <p>Three easy steps to make your voice heard in the PUST student elections.</p>
+        </div>
+
+        <div className="landing-steps-grid">
+          <div className="landing-step-card">
+            <div className="landing-step-number">1</div>
+            <div className="landing-step-icon">
+              <i className="fa-solid fa-id-card" />
+            </div>
+            <h3>Get Your Vote ID</h3>
+            <p>Receive your unique, confidential voting ID from the election committee or department admin.</p>
+          </div>
+
+          <div className="landing-step-card">
+            <div className="landing-step-number">2</div>
+            <div className="landing-step-icon">
+              <i className="fa-solid fa-user-check" />
+            </div>
+            <h3>Choose Your Candidate</h3>
+            <p>Browse candidates, read their profiles, and select the one who best represents your vision.</p>
+          </div>
+
+          <div className="landing-step-card">
+            <div className="landing-step-number">3</div>
+            <div className="landing-step-icon">
+              <i className="fa-solid fa-check-to-slot" />
+            </div>
+            <h3>Cast Your Vote</h3>
+            <p>Confirm your choice and submit. Your vote is encrypted, anonymous, and counted instantly.</p>
+          </div>
+        </div>
+      </section>
+
       {/* Features Section */}
       <section className="landing-features" id="features">
         <div className="landing-section-head">
-          <span className="tag">Why PUST Elections</span>
+          <span className="landing-eyebrow">Why PUST Elections</span>
           <h2>Built for a Fair, Secure University Vote</h2>
           <p>
             A transparent digital election platform designed for PUST students and administrators.

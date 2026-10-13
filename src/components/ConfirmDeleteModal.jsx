@@ -11,7 +11,7 @@ export default function ConfirmDeleteModal({ title, description, itemName, onCan
           </div>
           <h3 className="delete-modal-title">{title}</h3>
           <p className="delete-modal-desc">
-            {description} <b>{itemName}</b>?
+            {description}{itemName ? <> <b>{itemName}</b>?</> : ''}
           </p>
         </div>
         <div className="modal-foot modal-foot-center">

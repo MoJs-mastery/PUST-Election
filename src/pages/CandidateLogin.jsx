@@ -46,7 +46,7 @@ export default function CandidateLogin() {
           <div>
             <Link to="/" className="lp-logo-link" title="Back to Home" aria-label="PUST Elections — back to home">
               <div className="lp-logo">
-                <i className="fa-solid fa-check-to-slot" />
+                <img src="/pust-logo-ref.png" alt="PUST Logo" className="brand-logo-img" />
               </div>
               <div className="lp-brand">
                 <b>

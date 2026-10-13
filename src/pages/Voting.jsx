@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { supabase } from '../supabaseClient'
@@ -15,6 +15,9 @@ export default function Voting() {
   const [confirmModal, setConfirmModal] = useState(false)
   const [successModal, setSuccessModal] = useState(false)
   const [successCandidate, setSuccessCandidate] = useState('')
+
+  const [candidateSearch, setCandidateSearch] = useState('')
+  const [deptFilter, setDeptFilter] = useState('all')
 
   const [voteId, setVoteId] = useState('')
   const [idState, setIdState] = useState('')
@@ -243,6 +246,16 @@ export default function Voting() {
     setGenderErr(false)
   }
 
+  const filteredCandidates = useMemo(() => {
+    return data.candidates.filter((c) => {
+      const matchSearch =
+        !candidateSearch ||
+        c.m_name?.toLowerCase().includes(candidateSearch.toLowerCase().trim())
+      const matchDept = deptFilter === 'all' || String(c.m_depadrments_id) === String(deptFilter)
+      return matchSearch && matchDept
+    })
+  }, [data.candidates, candidateSearch, deptFilter])
+
   if (loading) {
     return (
       <div className="vote-page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
@@ -259,15 +272,30 @@ export default function Voting() {
       <div className="pust-topbar">
         <div className="pust-topbar-inner">
           <div className="pust-topbar-info">
-            <span>
-              <i className="fa-solid fa-location-dot" /> Galkayo, Puntland, Somalia
+            <span className="topbar-item topbar-loc" title="Campus: Galkayo, Puntland, Somalia">
+              <i className="fa-solid fa-location-dot" />
+              <span className="topbar-loc-full">Galkayo, Puntland, Somalia</span>
+              <span className="topbar-loc-short">Galkayo</span>
             </span>
-            <a href="mailto:info@pust.edu.so">
-              <i className="fa-solid fa-envelope" /> info@pust.edu.so
+            <a href="tel:+252906821920" className="topbar-item topbar-phone" title="Call: +252 90 682 1920">
+              <i className="fa-solid fa-phone" />
+              <span>+252 90 682 1920</span>
+            </a>
+            <a href="mailto:info@pust.edu.so" className="topbar-item topbar-email" title="Email: info@pust.edu.so">
+              <i className="fa-solid fa-envelope" />
+              <span>info@pust.edu.so</span>
             </a>
           </div>
-          <a className="pust-topbar-link" href="https://www.pust.edu.so">
-            <i className="fa-solid fa-globe" /> www.pust.edu.so
+          <a
+            className="pust-topbar-link"
+            href="https://www.pust.edu.so"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="PUST Official Portal"
+          >
+            <i className="fa-solid fa-globe" />
+            <span className="topbar-web-full">www.pust.edu.so</span>
+            <span className="topbar-web-short">pust.edu.so</span>
           </a>
         </div>
       </div>
@@ -275,7 +303,7 @@ export default function Voting() {
       <nav className="navbar">
         <Link to="/" className="nav-brand" style={{ textDecoration: 'none', cursor: 'pointer', color: 'inherit' }}>
           <div className="nav-logo">
-            <i className="fa-solid fa-check-to-slot" />
+            <img src="/pust-logo-ref.png" alt="PUST Logo" className="brand-logo-img" />
           </div>
           <span>PUST <em>Elections</em></span>
         </Link>
@@ -286,10 +314,10 @@ export default function Voting() {
           <Link to="/dashboard" className="nav-chip" aria-label="Admin dashboard" style={{ textDecoration: 'none' }}>
             <i className="fa-solid fa-user-shield" /> <span>Admin</span>
           </Link>
-          <div className="nav-chip">
+          <div className="nav-chip nav-chip-count" title="Tirada Musharrixiinta">
             <i className="fa-solid fa-user-tie" /> <span>{data.candidates.length}</span>
           </div>
-          <div className="nav-chip">
+          <div className="nav-chip nav-chip-count" title="Tirada Waaxyaha">
             <i className="fa-solid fa-users" /> <span>{data.departments.length}</span>
           </div>
         </div>
@@ -298,41 +326,133 @@ export default function Voting() {
       <header className="hero">
         <div className="hero-badge">
           <span className="dot" style={{ width: 8, height: 8, borderRadius: '50%', background: '#1B7F43' }} />
-          Cod bixin &nbsp;•&nbsp; 2026
+          Puntland University of Science &amp; Technology • Official Election 2026
         </div>
-        <h1>UCodeeh Musharaxaadga</h1>
-        <p>Fadlan dooro musharaxa aad rabto inaad u codsato. Ka dibna xaqiiji ID-gaaga si codkaaga u dhaqangalo.</p>
+        <h1>Doorashada Golaha Ardayda PUST</h1>
+        <p>
+          Ucodee musharraxa aad u aragto inuu ku habboon yahay hoggaanka ardayda. Dooro waaxdaada ama raadi magaca musharraxa.
+        </p>
       </header>
 
       <main className="container">
-        <div className="section-label">
-          <i className="fa-solid fa-user-tie" /> Musharixiinta &nbsp;({data.candidates.length})
-        </div>
-        <div className="candidates-grid">
-          {data.candidates.map((c) => (
-            <div className="cand-card" key={c.id}>
-              <div className="cand-body">
-                <div className="cand-avatar">
-                  {c.m_image ? (
-                    <img src={c.m_image} alt={c.m_name} />
-                  ) : (
-                    <div className="cand-placeholder">
-                      <i className="fa-solid fa-user-tie" />
-                    </div>
-                  )}
-                </div>
-                <h3 className="cand-name">{c.m_name}</h3>
-                <div className="cand-dept">
-                  <i className="fa-solid fa-building-columns" />
-                  {data.departments.find((d) => d.id === c.m_depadrments_id)?.d_name || ''}
-                </div>
-                <button className="btn-vote" onClick={() => openVoteModal(c)}>
-                  <i className="fa-solid fa-check-to-slot" /> Codeeh
+        {/* Department Filter & Search Bar */}
+        <div className="vote-toolbar">
+          <div className="vote-search-box">
+            <i className="fa-solid fa-magnifying-glass" />
+            <input
+              type="text"
+              placeholder="Raadi magaca musharraxa..."
+              value={candidateSearch}
+              onChange={(e) => setCandidateSearch(e.target.value)}
+              aria-label="Raadi musharax"
+            />
+            {candidateSearch && (
+              <button
+                type="button"
+                className="vote-search-clear"
+                onClick={() => setCandidateSearch('')}
+                title="Tirtir raadinta"
+              >
+                <i className="fa-solid fa-xmark" />
+              </button>
+            )}
+          </div>
+
+          <div className="vote-dept-pills">
+            <button
+              type="button"
+              className={`vote-dept-pill ${deptFilter === 'all' ? 'active' : ''}`}
+              onClick={() => setDeptFilter('all')}
+            >
+              <span>Dhammaan Waaxyaha</span>
+              <span className="vote-pill-count">{data.candidates.length}</span>
+            </button>
+            {data.departments.map((d) => {
+              const count = data.candidates.filter((c) => String(c.m_depadrments_id) === String(d.id)).length
+              return (
+                <button
+                  key={d.id}
+                  type="button"
+                  className={`vote-dept-pill ${deptFilter === String(d.id) ? 'active' : ''}`}
+                  onClick={() => setDeptFilter(String(d.id))}
+                >
+                  <span>{d.d_name}</span>
+                  <span className="vote-pill-count">{count}</span>
                 </button>
-              </div>
-            </div>
-          ))}
+              )
+            })}
+          </div>
         </div>
+
+        <div className="section-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>
+            <i className="fa-solid fa-user-tie" /> Musharixiinta {deptFilter !== 'all' ? 'la doortay' : ''} ({filteredCandidates.length})
+          </span>
+          {(candidateSearch || deptFilter !== 'all') && (
+            <button
+              type="button"
+              className="btn btn-xs btn-outline"
+              onClick={() => {
+                setCandidateSearch('')
+                setDeptFilter('all')
+              }}
+              style={{ fontSize: '0.78rem' }}
+            >
+              <i className="fa-solid fa-rotate-left" /> Dib u celi shaandhada
+            </button>
+          )}
+        </div>
+
+        {filteredCandidates.length === 0 ? (
+          <div className="empty-state" style={{ padding: '60px 20px', background: '#ffffff', borderRadius: 14, border: '1px solid var(--pust-border)' }}>
+            <i className="fa-solid fa-user-graduate" style={{ fontSize: '3rem', color: 'var(--pust-muted)', opacity: 0.5, marginBottom: 16 }} />
+            <h3 style={{ fontSize: '1.2rem', color: 'var(--pust-navy)', marginBottom: 8, fontWeight: 700 }}>
+              Ma jiraan musharrixiin waafaqsan raadintaada
+            </h3>
+            <p style={{ color: 'var(--pust-muted)', fontSize: '0.92rem', marginBottom: 18 }}>
+              Isku day inaad raadiso magac kale ama doorato waax kale.
+            </p>
+            <button
+              type="button"
+              className="btn btn-outline"
+              onClick={() => {
+                setCandidateSearch('')
+                setDeptFilter('all')
+              }}
+            >
+              <i className="fa-solid fa-rotate-left" /> Muuji dhammaan musharrixiinta
+            </button>
+          </div>
+        ) : (
+          <div className="candidates-grid">
+            {filteredCandidates.map((c) => {
+              const deptName = data.departments.find((d) => d.id === c.m_depadrments_id)?.d_name || 'PUST Faculty'
+              return (
+                <div className="cand-card" key={c.id}>
+                  <div className="cand-body">
+                    <div className="cand-avatar">
+                      {c.m_image ? (
+                        <img src={c.m_image} alt={c.m_name} />
+                      ) : (
+                        <div className="cand-placeholder">
+                          <i className="fa-solid fa-user-tie" />
+                        </div>
+                      )}
+                    </div>
+                    <h3 className="cand-name">{c.m_name}</h3>
+                    <div className="cand-dept" title={`Department: ${deptName}`}>
+                      <i className="fa-solid fa-building-columns" />
+                      <span>{deptName}</span>
+                    </div>
+                    <button className="btn-vote" onClick={() => openVoteModal(c)}>
+                      <i className="fa-solid fa-check-to-slot" /> Codeeh
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </main>
 
       {/* VOTE MODAL */}
