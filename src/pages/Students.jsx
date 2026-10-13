@@ -7,8 +7,7 @@ import CustomSelect from '../components/CustomSelect.jsx'
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal.jsx'
 import {
   rowsFromMatrix,
-  autoMapDepartments,
-  applyDepartmentMapping,
+  validateRows,
   reasonLabel,
   sanitizeSearchTerm,
 } from '../studentsImport'
@@ -47,16 +46,11 @@ export default function Students() {
   const [importOpen, setImportOpen] = useState(false)
   const [fileName, setFileName] = useState('')
   const [rawRows, setRawRows] = useState([])
-  const [deptMapping, setDeptMapping] = useState({})
   const [parseError, setParseError] = useState('')
   const [rawMatrix, setRawMatrix] = useState(null)
   const [pick, setPick] = useState({ student_name: -1, department: -1, semester: -1 })
   const [importing, setImporting] = useState(false)
   const [report, setReport] = useState(null)
-  const [assignMode, setAssignMode] = useState('single') // 'single' | 'distribute'
-  const [selectedSingleDept, setSelectedSingleDept] = useState('')
-  const [deptDist, setDeptDist] = useState({}) // { deptName: count } when file has no dept column
-  const [rowDeptOverrides, setRowDeptOverrides] = useState({}) // { [rowIndex]: deptName }
   const fileRef = useRef(null)
 
   const [editStudent, setEditStudent] = useState(null)
@@ -71,18 +65,38 @@ export default function Students() {
 
   const systemDeptNames = useMemo(() => departments.map((d) => d.d_name), [departments])
 
-  const fileDepartments = useMemo(
-    () =>
-      [...new Set(rawRows.map((r) => r.department).filter(Boolean))].sort((a, b) =>
-        a.localeCompare(b)
-      ),
-    [rawRows]
+  const { valid: parsedRows, invalid: issues } = useMemo(
+    () => validateRows(rawRows, systemDeptNames),
+    [rawRows, systemDeptNames]
   )
 
-  const { valid: parsedRows, invalid: issues } = useMemo(
-    () => applyDepartmentMapping(rawRows, deptMapping, systemDeptNames),
-    [rawRows, deptMapping, systemDeptNames]
-  )
+  const [addingDepts, setAddingDepts] = useState(false)
+
+  const missingDepts = useMemo(() => {
+    return [
+      ...new Set(
+        issues
+          .filter((r) => r.reason === 'department_not_found' && r.department)
+          .map((r) => r.department)
+      ),
+    ]
+  }, [issues])
+
+  async function handleAddMissingDepartments() {
+    if (!missingDepts.length) return
+    setAddingDepts(true)
+    try {
+      const records = missingDepts.map((d_name) => ({ d_name: d_name.trim() }))
+      const { error } = await supabase.from('depadrments_depadrments_db').insert(records)
+      if (error) throw error
+      showToast('success', `${records.length} waaxood ayaa lagu daray nidaamka.`)
+      await loadDepartments()
+    } catch (err) {
+      showToast('error', err.message || 'Khalad ayaa dhacay ku darista waaxyaha.')
+    } finally {
+      setAddingDepts(false)
+    }
+  }
 
   useEffect(() => {
     loadDepartments()
@@ -109,7 +123,6 @@ export default function Students() {
       .order('d_name')
     if (!error && data) {
       setDepartments(data)
-      setSelectedSingleDept((prev) => prev || (data[0]?.d_name ?? ''))
     }
   }
 
@@ -195,14 +208,9 @@ export default function Students() {
   function resetImport() {
     setFileName('')
     setRawRows([])
-    setDeptMapping({})
     setParseError('')
     setRawMatrix(null)
     setPick({ student_name: -1, department: -1, semester: -1 })
-    setAssignMode('single')
-    setSelectedSingleDept(departments[0]?.d_name || '')
-    setDeptDist({})
-    setRowDeptOverrides({})
     setReport(null)
     setImporting(false)
     if (fileRef.current) fileRef.current.value = ''
@@ -213,10 +221,6 @@ export default function Students() {
     setImportOpen(true)
   }
 
-  function setMapping(fileDept, systemDept) {
-    setDeptMapping((prev) => ({ ...prev, [fileDept]: systemDept }))
-  }
-
   function reparsePicked() {
     if (!rawMatrix) return
     const forced = {}
@@ -225,21 +229,15 @@ export default function Students() {
     if (pick.semester >= 0) forced.semester = pick.semester
 
     const { rows, missing } = rowsFromMatrix(rawMatrix, forced)
-    // `missing` now only contains 'name' (department is optional). Block only
-    // when student_name is still unresolved or no data rows were found.
     if (missing.length || !rows.length) {
-      showToast('warn', 'Wali ma la heli karo tiirka Student Name — dooro tiirka saxda ah.')
+      const missingLabels = missing.map((m) =>
+        m === 'name' ? 'Student Name' : m === 'department' ? 'Department' : m
+      )
+      showToast('warn', `Wali ma la heli karo tiirka: ${missingLabels.join(', ')} — dooro tiirka saxda ah.`)
       return
     }
 
-    const fileDepts = [...new Set(rows.map((r) => r.department).filter(Boolean))]
     setRawRows(rows)
-    setDeptMapping(autoMapDepartments(fileDepts, systemDeptNames))
-    if (!fileDepts.length && departments.length) {
-      const init = {}
-      departments.forEach((d) => { init[d.d_name] = 0 })
-      setDeptDist(init)
-    }
     setParseError('')
     setRawMatrix(null)
   }
@@ -295,7 +293,7 @@ export default function Students() {
           ['student_name', 'department', 'semester'].map((k) => cols[k]).filter((i) => i >= 0)
         )
         const forced = {}
-        for (const key of ['student_name', 'semester']) {
+        for (const key of ['student_name', 'department', 'semester']) {
           if (cols[key] >= 0) continue
           const free = Array.from({ length: colCount }, (_, i) => i).filter(
             (i) => !assigned.has(i)
@@ -309,11 +307,7 @@ export default function Students() {
         if (Object.keys(forced).length) {
           const retry = rowsFromMatrix(matrix, forced)
           if (!retry.missing.length && retry.rows.length) {
-            const fileDepts = [
-              ...new Set(retry.rows.map((r) => r.department).filter(Boolean)),
-            ]
             setRawRows(retry.rows)
-            setDeptMapping(autoMapDepartments(fileDepts, systemDeptNames))
             setParseError('')
             setRawMatrix(null)
             return
@@ -323,10 +317,11 @@ export default function Students() {
         const headers = (matrix[0] || [])
           .map((h) => String(h ?? '').trim())
           .filter(Boolean)
+        const missingLabels = missing.map((m) =>
+          m === 'name' ? 'Student Name' : m === 'department' ? 'Department' : m
+        )
         setParseError(
-          `File-ka waa ka maqan tiirka: ${missing
-            .map((m) => (m === 'name' ? 'Student Name' : 'Semester'))
-            .join(', ')}. Tiirarka la helay: ${headers.join(', ') || '(midna)'}`
+          `File-ka waa ka maqan tiirka: ${missingLabels.join(', ')}. Tiirarka la helay: ${headers.join(', ') || '(midna)'}`
         )
         setRawMatrix(matrix)
         setPick({
@@ -341,53 +336,11 @@ export default function Students() {
         return
       }
 
-      const fileDepts = [...new Set(rows.map((r) => r.department).filter(Boolean))]
       setRawRows(rows)
-      setDeptMapping(autoMapDepartments(fileDepts, systemDeptNames))
-      // If the file had no department column at all, init distribution (all 0)
-      if (!fileDepts.length && departments.length) {
-        const init = {}
-        departments.forEach((d) => { init[d.d_name] = 0 })
-        setDeptDist(init)
-      }
       setRawMatrix(null)
     } catch (err) {
       setParseError(err.message || 'Khalad ayaa dhacay akhrinta file-ka.')
     }
-  }
-
-  // Computed from deptDist: ordered list of { dept, count } for payload building
-  const distEntries = Object.entries(deptDist).filter(([, n]) => Number(n) > 0)
-  const distTotal = distEntries.reduce((s, [, n]) => s + Number(n), 0)
-  const noDeptInFile = rawRows.length > 0 && rawRows.every((r) => !r.department)
-
-  function distributeEqually() {
-    if (!departments.length || !parsedRows.length) return
-    const total = parsedRows.length
-    const numDepts = departments.length
-    const base = Math.floor(total / numDepts)
-    const remainder = total % numDepts
-    const nextDist = {}
-    departments.forEach((dep, idx) => {
-      nextDist[dep.d_name] = base + (idx < remainder ? 1 : 0)
-    })
-    setDeptDist(nextDist)
-  }
-
-  function getAssignedDeptForRow(rowIndex) {
-    if (rowDeptOverrides[rowIndex]) {
-      return rowDeptOverrides[rowIndex]
-    }
-    if (assignMode === 'single') {
-      return selectedSingleDept
-    }
-    // Distribute mode: calculate cumulative offset
-    let cum = 0
-    for (const [dept, rawCount] of distEntries) {
-      cum += Number(rawCount) || 0
-      if (rowIndex < cum) return dept
-    }
-    return selectedSingleDept || departments[0]?.d_name || ''
   }
 
   async function confirmImport() {
@@ -395,37 +348,13 @@ export default function Students() {
       showToast('warn', 'Ma jiro saf sax ah oo la soo gelin karo.')
       return
     }
-    if (noDeptInFile) {
-      if (assignMode === 'single') {
-        if (!selectedSingleDept) {
-          showToast('warn', 'Fadlan dooro waaxda ardayda.')
-          return
-        }
-      } else {
-        if (distTotal === 0) {
-          showToast('warn', 'Fadlan qaybso ardayda waaxaha.')
-          return
-        }
-        if (distTotal !== parsedRows.length) {
-          showToast('warn', `Wadarta qaybinta (${distTotal}) waa inay la mid tahay tirada ardayda (${parsedRows.length}).`)
-          return
-        }
-      }
-    }
     setImporting(true)
     try {
-      let payload
-      if (noDeptInFile) {
-        payload = parsedRows.map((r, idx) => ({
-          student_name: r.student_name,
-          department: getAssignedDeptForRow(idx),
-          semester: r.semester,
-        }))
-      } else {
-        payload = parsedRows.map(({ student_name, department, semester }) => ({
-          student_name, department, semester,
-        }))
-      }
+      const payload = parsedRows.map(({ student_name, department, semester }) => ({
+        student_name,
+        department,
+        semester,
+      }))
 
       const { data, error } = await supabase.rpc('import_students', { p_students: payload })
       if (error) throw error
@@ -817,9 +746,8 @@ export default function Students() {
               {!report && (
                 <>
                   <p className="cell-sub" style={{ marginTop: 0, fontSize: '0.92rem', lineHeight: '1.5', marginBottom: 18 }}>
-                    File-ku waa inuu leeyahay tiirka <b>Student Name</b> iyo <b>Semester</b>.
-                    Tiirka <b>Department</b> waa ikhtiyaari — haddii aanu ku jirin file-ka,
-                    waxaad si fudud ugu qaybin kartaa waaxaha hoos ka muuqda. Nidaamku wuxuu si otomaatig ah arday kasta ugu samaynayaa Voting ID gaar ah.
+                    File-ku waa inuu leeyahay tiirarka <b>Student Name</b>, <b>Department</b>, iyo <b>Semester</b>.
+                    Waaxda (Department) waa inay la mid tahay mid ka mid ah waaxyaha nidaamka ku jira. Nidaamku wuxuu si otomaatig ah arday kasta ugu samaynayaa Voting ID gaar ah.
                   </p>
 
                   <div className="form-group" style={{ marginBottom: 18 }}>
@@ -892,21 +820,11 @@ export default function Students() {
                         const options = pickerOptions(rawMatrix).filter(
                           (o) => !usedElsewhere.has(o.value)
                         )
-                        // Department is optional — show a softer message if no column available
                         if (!options.length) {
-                          if (f.key === 'department') {
-                            return (
-                              <div key={f.key} className="cell-sub" style={{ marginBottom: 8 }}>
-                                <i className="fa-solid fa-circle-info" />{' '}
-                                <b>{f.label}:</b> file-ka tiir Department kuma jiro — ardaydii waxaa dambe loo doori karaa waaxdooda.
-                              </div>
-                            )
-                          }
                           return (
                             <div key={f.key} className="cell-sub" style={{ marginBottom: 8 }}>
                               <i className="fa-solid fa-circle-exclamation" />{' '}
-                              <b>{f.label}:</b> file-ka ma laha tiir kale oo u habboon. Haddii uu
-                              dhamaayo, isticmaal faylka tiirka {f.label} ku jiro.
+                              <b>{f.label}:</b> file-ka ma laha tiir kale oo u habboon. Fadlan isticmaal fayl ay ku jiraan tiirarka loo baahan yahay.
                             </div>
                           )
                         }
@@ -948,342 +866,121 @@ export default function Students() {
 
                   {!parseError && rawRows.length > 0 && (
                     <>
-                      <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
                         <span className={`badge ${parsedRows.length ? 'green' : 'red'}`}>
                           <i
                             className={`fa-solid ${
                               parsedRows.length ? 'fa-check' : 'fa-circle-xmark'
                             }`}
                           />{' '}
-                          {parsedRows.length} diyaar
+                          {parsedRows.length} diyaar ah
                         </span>
                         {issues.length > 0 && (
-                          <span className="badge amber">
-                            <i className="fa-solid fa-triangle-exclamation" /> {issues.length} la
-                            boodi doono
+                          <span className="badge red">
+                            <i className="fa-solid fa-triangle-exclamation" /> {issues.length} khalad ku jira
                           </span>
                         )}
                       </div>
 
-                      {fileDepartments.length > 0 ? (
-                        <div className={`import-map ${issues.length ? 'has-gaps' : ''}`}>
-                          <p className="cell-sub" style={{ marginTop: 0, marginBottom: 10 }}>
-                            Waaxda file-ka hoos ku qoran, dooro waaxda nidaamka u dhigma. Haddii aadan
-                            dooran, ardaydaas waa la boodi doonaa.
-                          </p>
-                          {fileDepartments.map((d) => {
-                            const unmapped = !deptMapping[d]
-                            return (
-                              <div key={d} className="dept-map-row">
-                                <span className="dept-map-src" title={d}>
-                                  {d}
-                                </span>
-                                <i className="fa-solid fa-arrow-right dept-map-arrow" />
-                                <select
-                                  className="form-input"
-                                  style={{ borderColor: unmapped ? 'var(--pust-danger)' : undefined }}
-                                  value={deptMapping[d] || ''}
-                                  onChange={(e) => setMapping(d, e.target.value)}
-                                  aria-label={`Map ${d} to a system department`}
-                                >
-                                  <option value="">— Ha soo gelin —</option>
-                                  {departments.map((dep) => (
-                                    <option key={dep.id} value={dep.d_name}>
-                                      {dep.d_name}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                            )
-                          })}
-                          {!departments.length && (
-                            <p className="cell-sub" style={{ marginBottom: 0 }}>
-                              Nidaamku waax ma laha. Marka hore ku dar waaxaha (Waxaha).
-                            </p>
-                          )}
-                        </div>
-                      ) : departments.length > 0 ? (
-                        /* File has no department column — easy department selection */
+                      {issues.length > 0 && (
                         <div
+                          style={{
+                            background: 'rgba(239, 68, 68, 0.06)',
+                            border: '1.5px solid rgba(239, 68, 68, 0.3)',
+                            borderRadius: 12,
+                            padding: '14px 18px',
+                            marginBottom: 16,
+                          }}
+                        >
+                          <div
                             style={{
-                              background: 'var(--pust-bg, #f8fafc)',
-                              border: '1.5px solid var(--pust-border, #e2e8f0)',
-                              borderRadius: 14,
-                              padding: '18px 22px',
-                              marginBottom: 18,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              flexWrap: 'wrap',
+                              gap: 10,
+                              marginBottom: 8,
                             }}
                           >
-                            {/* Header with Title and Mode Switcher */}
                             <div
                               style={{
                                 display: 'flex',
                                 alignItems: 'center',
-                                justifyContent: 'space-between',
-                                flexWrap: 'wrap',
-                                gap: 12,
-                                marginBottom: 16,
+                                gap: 8,
+                                color: 'var(--pust-danger, #ef4444)',
+                                fontWeight: 700,
+                                fontSize: '0.95rem',
                               }}
                             >
-                              <div>
-                                <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-                                  <i className="fa-solid fa-building-columns" style={{ color: 'var(--pust-primary, #2563eb)' }} />
-                                  Dooro Waaxda Ardayda ({parsedRows.length} arday)
-                                </h4>
-                                <p className="cell-sub" style={{ margin: '4px 0 0', fontSize: '0.88rem' }}>
-                                  File-ku tiir Department kuma jiro. Dooro habka aad ugu qoondeynayso:
-                                </p>
-                              </div>
-
-                              {/* Mode Switcher */}
-                              <div
-                                style={{
-                                  display: 'flex',
-                                  background: 'var(--pust-surface, #ffffff)',
-                                  border: '1px solid var(--pust-border, #e2e8f0)',
-                                  borderRadius: 10,
-                                  padding: 3,
-                                  gap: 4,
-                                }}
-                              >
-                                <button
-                                  type="button"
-                                  onClick={() => setAssignMode('single')}
-                                  style={{
-                                    border: 'none',
-                                    borderRadius: 7,
-                                    padding: '7px 14px',
-                                    fontSize: '0.88rem',
-                                    fontWeight: 600,
-                                    cursor: 'pointer',
-                                    transition: 'all 0.15s ease',
-                                    background: assignMode === 'single' ? 'var(--pust-primary, #2563eb)' : 'transparent',
-                                    color: assignMode === 'single' ? '#ffffff' : 'var(--pust-text)',
-                                  }}
-                                >
-                                  <i className="fa-solid fa-check-double" style={{ marginRight: 6 }} />
-                                  Dhammaan Hal Waax (Easy)
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setAssignMode('distribute')
-                                    if (distTotal === 0) distributeEqually()
-                                  }}
-                                  style={{
-                                    border: 'none',
-                                    borderRadius: 7,
-                                    padding: '7px 14px',
-                                    fontSize: '0.88rem',
-                                    fontWeight: 600,
-                                    cursor: 'pointer',
-                                    transition: 'all 0.15s ease',
-                                    background: assignMode === 'distribute' ? 'var(--pust-primary, #2563eb)' : 'transparent',
-                                    color: assignMode === 'distribute' ? '#ffffff' : 'var(--pust-text)',
-                                  }}
-                                >
-                                  <i className="fa-solid fa-arrows-split-up-and-left" style={{ marginRight: 6 }} />
-                                  U Qaybi Waaxaha
-                                </button>
-                              </div>
+                              <i className="fa-solid fa-circle-exclamation" />
+                              <span>Khaladaadka Waaxda / Xaqiijinta ({issues.length} saf lama soo gelin karo)</span>
                             </div>
-
-                            {/* MODE 1: Single Department (1-Click Selection) */}
-                            {assignMode === 'single' && (
-                              <div>
-                                <p style={{ margin: '0 0 10px', fontSize: '0.9rem', fontWeight: 600, color: 'var(--pust-text)' }}>
-                                  Guji waaxda ardayda oo dhan ({parsedRows.length}) la siinayo:
-                                </p>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
-                                  {departments.map((d) => {
-                                    const isSelected = selectedSingleDept === d.d_name
-                                    return (
-                                      <button
-                                        key={d.id}
-                                        type="button"
-                                        onClick={() => setSelectedSingleDept(d.d_name)}
-                                        style={{
-                                          padding: '10px 18px',
-                                          borderRadius: 10,
-                                          border: isSelected ? '2px solid var(--pust-primary, #2563eb)' : '1px solid var(--pust-border, #cbd5e1)',
-                                          background: isSelected ? 'rgba(37, 99, 235, 0.08)' : 'var(--pust-surface, #ffffff)',
-                                          color: isSelected ? 'var(--pust-primary, #2563eb)' : 'var(--pust-text)',
-                                          fontWeight: isSelected ? 700 : 500,
-                                          fontSize: '0.92rem',
-                                          cursor: 'pointer',
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                          gap: 8,
-                                          transition: 'all 0.15s ease',
-                                          boxShadow: isSelected ? '0 2px 8px rgba(37, 99, 235, 0.15)' : 'none',
-                                        }}
-                                      >
-                                        <i
-                                          className={`fa-solid ${isSelected ? 'fa-circle-check' : 'fa-building-columns'}`}
-                                          style={{ color: isSelected ? 'var(--pust-primary, #2563eb)' : 'inherit', opacity: isSelected ? 1 : 0.6 }}
-                                        />
-                                        {d.d_name}
-                                      </button>
-                                    )
-                                  })}
-                                </div>
-
-                                {selectedSingleDept && (
-                                  <div
-                                    style={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: 8,
-                                      padding: '10px 14px',
-                                      borderRadius: 8,
-                                      background: 'rgba(34, 197, 94, 0.1)',
-                                      border: '1px solid rgba(34, 197, 94, 0.25)',
-                                      color: '#15803d',
-                                      fontSize: '0.9rem',
-                                      fontWeight: 600,
-                                    }}
-                                  >
-                                    <i className="fa-solid fa-circle-check" />
-                                    <span>
-                                      Dhammaan <b>{parsedRows.length} arday</b> waxay toos u noqonayaan waaxda <b>"{selectedSingleDept}"</b>
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-
-                            {/* MODE 2: Distribute Across Departments */}
-                            {assignMode === 'distribute' && (
-                              <div>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
-                                  <p className="cell-sub" style={{ margin: 0 }}>
-                                    Geli tirada ardayda waax kasta ama guji "Si siman u qaybi":
-                                  </p>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                    <button
-                                      type="button"
-                                      className="btn btn-outline"
-                                      style={{ padding: '6px 14px', fontSize: 13, height: 'auto', fontWeight: 600, borderRadius: 8 }}
-                                      onClick={distributeEqually}
-                                    >
-                                      <i className="fa-solid fa-arrows-split-up-and-left" /> Si siman u qaybi
-                                    </button>
-                                    <span
-                                      className={`badge ${distTotal === parsedRows.length && parsedRows.length > 0 ? 'green' : distTotal > parsedRows.length ? 'red' : 'amber'}`}
-                                      style={{ fontVariantNumeric: 'tabular-nums', padding: '6px 12px', fontSize: '0.88rem' }}
-                                    >
-                                      <i className={`fa-solid ${distTotal === parsedRows.length && parsedRows.length > 0 ? 'fa-check' : 'fa-scale-balanced'}`} />
-                                      {' '}{distTotal} / {parsedRows.length} la qaybisey
-                                    </span>
-                                  </div>
-                                </div>
-
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                  {departments.map((dep) => {
-                                    const val = deptDist[dep.d_name] ?? 0
-                                    const isOver = distTotal > parsedRows.length
-                                    return (
-                                      <div
-                                        key={dep.id}
-                                        className="dept-map-row"
-                                        style={{
-                                          alignItems: 'center',
-                                          padding: '8px 14px',
-                                          borderRadius: 8,
-                                          background: Number(val) > 0 ? 'rgba(37, 99, 235, 0.05)' : 'var(--pust-surface, #ffffff)',
-                                          border: '1px solid',
-                                          borderColor: Number(val) > 0 ? 'rgba(37, 99, 235, 0.25)' : 'var(--pust-border, #e2e8f0)',
-                                        }}
-                                      >
-                                        <span className="dept-map-src" style={{ flex: 1, fontSize: '0.95rem' }}>
-                                          <i className="fa-solid fa-building-columns" style={{ marginRight: 8, opacity: 0.6 }} />
-                                          {dep.d_name}
-                                        </span>
-                                        <i className="fa-solid fa-arrow-right dept-map-arrow" />
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                          <button
-                                            type="button"
-                                            className="btn btn-ghost btn-xs"
-                                            style={{ width: 28, height: 28, padding: 0, borderRadius: 6, fontSize: 14 }}
-                                            onClick={() =>
-                                              setDeptDist((prev) => ({
-                                                ...prev,
-                                                [dep.d_name]: Math.max(0, (prev[dep.d_name] ?? 0) - 1),
-                                              }))
-                                            }
-                                          >
-                                            -
-                                          </button>
-                                          <input
-                                            type="number"
-                                            min={0}
-                                            max={parsedRows.length}
-                                            className="form-input"
-                                            style={{
-                                              width: 75,
-                                              height: 38,
-                                              textAlign: 'center',
-                                              fontSize: 16,
-                                              borderColor: isOver
-                                                ? 'var(--pust-danger)'
-                                                : Number(val) > 0
-                                                ? 'var(--pust-success, #22c55e)'
-                                                : undefined,
-                                              fontWeight: Number(val) > 0 ? 700 : undefined,
-                                            }}
-                                            value={val}
-                                            onChange={(e) =>
-                                              setDeptDist((prev) => ({
-                                                ...prev,
-                                                [dep.d_name]: Math.max(0, Number(e.target.value) || 0),
-                                              }))
-                                            }
-                                            aria-label={`Number of students for ${dep.d_name}`}
-                                          />
-                                          <button
-                                            type="button"
-                                            className="btn btn-ghost btn-xs"
-                                            style={{ width: 28, height: 28, padding: 0, borderRadius: 6, fontSize: 14 }}
-                                            onClick={() =>
-                                              setDeptDist((prev) => ({
-                                                ...prev,
-                                                [dep.d_name]: (prev[dep.d_name] ?? 0) + 1,
-                                              }))
-                                            }
-                                          >
-                                            +
-                                          </button>
-                                          <span className="cell-sub" style={{ minWidth: 44, margin: 0, fontWeight: 500 }}>
-                                            arday
-                                          </span>
-                                        </div>
-                                      </div>
-                                    )
-                                  })}
-                                </div>
-
-                                {distTotal > 0 && distTotal !== parsedRows.length && (
-                                  <p className="cell-sub" style={{ marginTop: 10, marginBottom: 0, color: 'var(--pust-danger)', fontWeight: 600 }}>
-                                    <i className="fa-solid fa-triangle-exclamation" />{' '}
-                                    {distTotal > parsedRows.length
-                                      ? `${distTotal - parsedRows.length} arday ayaa ka badan intii loo baahnaa.`
-                                      : `${parsedRows.length - distTotal} arday ayaa weli dhiman in la qoondeeyo.`}
-                                  </p>
-                                )}
-                              </div>
+                            {missingDepts.length > 0 && (
+                              <button
+                                type="button"
+                                className="btn btn-primary btn-sm"
+                                style={{
+                                  fontSize: '0.84rem',
+                                  padding: '6px 14px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 6,
+                                }}
+                                onClick={handleAddMissingDepartments}
+                                disabled={addingDepts}
+                              >
+                                <i className={`fa-solid ${addingDepts ? 'fa-spinner fa-spin' : 'fa-plus'}`} />
+                                {addingDepts ? 'Ku darayaa...' : `Ku dar ${missingDepts.length} waaxood nidaamka`}
+                              </button>
                             )}
                           </div>
-                        ) : null}
-
+                          <p className="cell-sub" style={{ margin: '0 0 10px', color: 'var(--pust-text)', fontSize: '0.86rem' }}>
+                            Ardayda hoose lama soo gelin karo sababtoo ah waaxdoodu kama jirto nidaamka ama waa maqan tahay. Waaxdu waa inay ku jirtaa liiska waaxyaha (Departments).
+                          </p>
+                          <div style={{ maxHeight: 150, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            {issues.map((r, idx) => (
+                              <div
+                                key={idx}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  padding: '7px 12px',
+                                  background: 'var(--pust-surface, #ffffff)',
+                                  borderRadius: 8,
+                                  border: '1px solid rgba(239, 68, 68, 0.2)',
+                                  fontSize: '0.86rem',
+                                  gap: 8,
+                                  flexWrap: 'wrap',
+                                }}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  <span className="badge amber" style={{ fontSize: '0.76rem', padding: '2px 7px' }}>
+                                    Line {r.row}
+                                  </span>
+                                  <b>{r.student_name || '(Magac la\'aan)'}</b>
+                                </div>
+                                <div style={{ color: 'var(--pust-danger, #ef4444)', fontWeight: 600 }}>
+                                  {r.reason === 'department_not_found'
+                                    ? `Waaxda "${r.department}" lama helin`
+                                    : r.reason === 'missing_department'
+                                    ? 'Waaxdu waa maqan tahay'
+                                    : reasonLabel(r.reason)}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
                       {parsedRows.length === 0 && (
                         <div className="import-diag">
                           <p className="import-diag-title">
                             <i className="fa-solid fa-triangle-exclamation" /> Ma jiro saf la aqbali
-                            karo — {rawRows.length} saf ayaa la boodi doonaa.
+                            karo — dhammaan {rawRows.length} saf ayaa khalad ku jira.
                           </p>
                           <p className="cell-sub" style={{ marginTop: 0 }}>
-                            Kor ku qoran waa safafka waaxaha file-ka — dooro mid kasta waaxda
-                            nidaamka u dhigma. Qaabka kale, sax tiirka Department ee file-ka.
+                            Fadlan hubi in magacyada waaxyaha ku jira file-ka ay la mid yihiin waaxyaha nidaamka ka diiwaangashan.
                           </p>
                         </div>
                       )}
@@ -1313,27 +1010,18 @@ export default function Students() {
                                     <td>{r.row}</td>
                                     <td className="cell-main">{r.student_name}</td>
                                     <td>
-                                      {noDeptInFile ? (
-                                        <select
-                                          className="form-input"
-                                          style={{ height: 32, fontSize: 13, padding: '2px 8px', maxWidth: 200 }}
-                                          value={getAssignedDeptForRow(r.row - 1) || ''}
-                                          onChange={(e) =>
-                                            setRowDeptOverrides((prev) => ({
-                                              ...prev,
-                                              [r.row - 1]: e.target.value,
-                                            }))
-                                          }
-                                        >
-                                          {departments.map((dep) => (
-                                            <option key={dep.id} value={dep.d_name}>
-                                              {dep.d_name}
-                                            </option>
-                                          ))}
-                                        </select>
-                                      ) : (
-                                        r.department || '—'
-                                      )}
+                                      <span
+                                        className="badge"
+                                        style={{
+                                          background: 'rgba(37, 99, 235, 0.1)',
+                                          color: 'var(--pust-primary, #2563eb)',
+                                          border: '1px solid rgba(37, 99, 235, 0.25)',
+                                          fontWeight: 600,
+                                        }}
+                                      >
+                                        <i className="fa-solid fa-building-columns" style={{ marginRight: 5, fontSize: 11 }} />
+                                        {r.department}
+                                      </span>
                                     </td>
                                     <td>{r.semester || '—'}</td>
                                   </tr>
@@ -1345,28 +1033,6 @@ export default function Students() {
                             <p className="cell-sub">+ {parsedRows.length - 25} kale...</p>
                           )}
                         </>
-                      )}
-
-                      {issues.length > 0 && (
-                        <div style={{ marginTop: 12 }}>
-                          <p className="cell-sub" style={{ marginBottom: 6 }}>
-                            Safafka la boodi doono:
-                          </p>
-                          <div style={{ maxHeight: 140, overflow: 'auto' }}>
-                            {issues.slice(0, 30).map((r, idx) => (
-                              <div key={idx} className="cell-sub">
-                                <b>Line {r.row}:</b> {r.student_name || '(no name)'} —{' '}
-                                {reasonLabel(r.reason)}
-                                {r.reason.startsWith('department') && r.department
-                                  ? ` (${r.department})`
-                                  : ''}
-                              </div>
-                            ))}
-                            {issues.length > 30 && (
-                              <p className="cell-sub">+ {issues.length - 30} kale...</p>
-                            )}
-                          </div>
-                        </div>
                       )}
                     </>
                   )}
@@ -1424,19 +1090,10 @@ export default function Students() {
                   className="btn btn-primary"
                   style={{ padding: '10px 24px', fontSize: '0.95rem', fontWeight: 600 }}
                   onClick={confirmImport}
-                  disabled={
-                    importing ||
-                    !parsedRows.length ||
-                    (noDeptInFile && assignMode === 'single' && !selectedSingleDept) ||
-                    (noDeptInFile && assignMode === 'distribute' && distTotal !== parsedRows.length)
-                  }
+                  disabled={importing || !parsedRows.length}
                 >
                   <i className={`fa-solid ${importing ? 'fa-spinner fa-spin' : 'fa-file-import'}`} />
-                  {importing
-                    ? 'Importing...'
-                    : noDeptInFile && assignMode === 'distribute' && distTotal !== parsedRows.length
-                    ? `Qaybi ardayda (${distTotal}/${parsedRows.length})`
-                    : `Import ${parsedRows.length || ''}`}
+                  {importing ? 'Importing...' : `Import ${parsedRows.length || ''} Students`}
                 </button>
               )}
             </div>

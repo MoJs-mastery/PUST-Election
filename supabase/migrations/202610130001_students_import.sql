@@ -114,26 +114,28 @@ begin
             continue;
         end if;
 
-        -- Department is optional. If empty, insert with NULL department.
-        -- If provided but unknown, skip with a clear reason.
+        -- Department is required. If empty or unknown, skip with a clear reason.
         if v_dept_raw = '' then
-            v_dept_id := null;
-        else
-            -- Case-insensitive match that also collapses any internal whitespace
-            -- (double spaces, tabs, non-breaking spaces) so "Business  Admin..."
-            -- in a spreadsheet still matches the stored canonical name.
-            select id into v_dept_id
-            from public.depadrments_depadrments_db
-            where lower(regexp_replace(btrim(d_name), '\s+', ' ', 'g'))
-                = lower(regexp_replace(v_dept_raw, '\s+', ' ', 'g'))
-            limit 1;
+            v_skipped := v_skipped || jsonb_build_object(
+                'index', v_index, 'name', v_name,
+                'reason', 'missing_department', 'department', '');
+            continue;
+        end if;
 
-            if v_dept_id is null then
-                v_skipped := v_skipped || jsonb_build_object(
-                    'index', v_index, 'name', v_name,
-                    'reason', 'department_not_found', 'department', v_dept_raw);
-                continue;
-            end if;
+        -- Case-insensitive match that also collapses any internal whitespace
+        -- (double spaces, tabs, non-breaking spaces) so "Business  Admin..."
+        -- in a spreadsheet still matches the stored canonical name.
+        select id into v_dept_id
+        from public.depadrments_depadrments_db
+        where lower(regexp_replace(btrim(d_name), '\s+', ' ', 'g'))
+            = lower(regexp_replace(v_dept_raw, '\s+', ' ', 'g'))
+        limit 1;
+
+        if v_dept_id is null then
+            v_skipped := v_skipped || jsonb_build_object(
+                'index', v_index, 'name', v_name,
+                'reason', 'department_not_found', 'department', v_dept_raw);
+            continue;
         end if;
 
         -- Generate a code that is unique within the table AND this batch.

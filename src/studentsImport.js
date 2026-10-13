@@ -83,13 +83,13 @@ export function rowsFromMatrix(matrix, forced = {}) {
 
   const missing = []
   if (nameIdx < 0) missing.push('name')
-  // department is optional — files without a Department column are still valid
+  if (deptIdx < 0) missing.push('department')
 
   const rows = []
   for (let i = 1; i < matrix.length; i++) {
     const raw = matrix[i] || []
     const student_name = String(raw[nameIdx] ?? '').replace(/\s+/g, ' ').trim()
-    const department = String(raw[deptIdx] ?? '').replace(/\s+/g, ' ').trim()
+    const department = deptIdx >= 0 ? String(raw[deptIdx] ?? '').replace(/\s+/g, ' ').trim() : ''
     const semester = semIdx >= 0 ? String(raw[semIdx] ?? '').replace(/\s+/g, ' ').trim() : ''
 
     // Skip entirely blank lines (trailing rows in most spreadsheets).
@@ -104,8 +104,7 @@ export function rowsFromMatrix(matrix, forced = {}) {
 }
 
 // Split rows into importable ones and rejected ones. A row is valid when it
-// has a name. Department is optional — if present it must match a real system
-// department; rows with no department at all are imported without one.
+// has a name and its department matches an existing system department.
 export function validateRows(rows, departmentNames) {
   const lookup = new Map((departmentNames || []).map((d) => [normCompare(d), d]))
 
@@ -115,22 +114,22 @@ export function validateRows(rows, departmentNames) {
   for (const row of rows || []) {
     const student_name = String(row.student_name ?? '').trim()
     const department = String(row.department ?? '').trim()
+    const semester = String(row.semester ?? '').trim()
 
     if (!student_name) {
-      invalid.push({ ...row, student_name, reason: 'missing_name' })
+      invalid.push({ ...row, student_name, department, semester, reason: 'missing_name' })
       continue
     }
-    if (department) {
-      const canonical = lookup.get(normCompare(department))
-      if (!canonical) {
-        invalid.push({ ...row, department, reason: 'department_not_found' })
-        continue
-      }
-      valid.push({ ...row, student_name, department: canonical })
-    } else {
-      // No department in the file — import without one
-      valid.push({ ...row, student_name, department: '' })
+    if (!department) {
+      invalid.push({ ...row, student_name, department: '', semester, reason: 'missing_department' })
+      continue
     }
+    const canonical = lookup.get(normCompare(department))
+    if (!canonical) {
+      invalid.push({ ...row, student_name, department, semester, reason: 'department_not_found' })
+      continue
+    }
+    valid.push({ ...row, student_name, department: canonical, semester })
   }
 
   return { valid, invalid }

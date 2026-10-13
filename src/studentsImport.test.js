@@ -191,6 +191,47 @@ describe('validateRows', () => {
     )
     expect(valid[0].department).toBe('Nursing')
   })
+
+  it('assigns each student their row-specific department directly from the file', () => {
+    const { valid, invalid } = validateRows(
+      [
+        { student_name: 'Student One', department: 'IT', semester: '1', row: 2 },
+        { student_name: 'Student Two', department: 'Nursing', semester: '2', row: 3 },
+        { student_name: 'Student Three', department: 'Business', semester: '3', row: 4 },
+      ],
+      departments
+    )
+    expect(invalid).toHaveLength(0)
+    expect(valid).toHaveLength(3)
+    expect(valid[0]).toMatchObject({ student_name: 'Student One', department: 'IT', semester: '1', row: 2 })
+    expect(valid[1]).toMatchObject({ student_name: 'Student Two', department: 'Nursing', semester: '2', row: 3 })
+    expect(valid[2]).toMatchObject({ student_name: 'Student Three', department: 'Business', semester: '3', row: 4 })
+  })
+
+  it('identifies the affected student and row when department is not found or missing', () => {
+    const { valid, invalid } = validateRows(
+      [
+        { student_name: 'Valid Student', department: 'IT', semester: '1', row: 2 },
+        { student_name: 'Invalid Dept Student', department: 'Medicine', semester: '1', row: 3 },
+        { student_name: 'Missing Dept Student', department: '', semester: '2', row: 4 },
+      ],
+      departments
+    )
+    expect(valid).toHaveLength(1)
+    expect(invalid).toHaveLength(2)
+    expect(invalid[0]).toMatchObject({
+      row: 3,
+      student_name: 'Invalid Dept Student',
+      department: 'Medicine',
+      reason: 'department_not_found',
+    })
+    expect(invalid[1]).toMatchObject({
+      row: 4,
+      student_name: 'Missing Dept Student',
+      department: '',
+      reason: 'missing_department',
+    })
+  })
 })
 
 describe('reasonLabel', () => {
