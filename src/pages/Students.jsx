@@ -57,6 +57,9 @@ export default function Students() {
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [bulkDeleteTarget, setBulkDeleteTarget] = useState(null) // 'students' | 'usedIds'
   const [saving, setSaving] = useState(false)
+  const [exporting, setExporting] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef(null)
 
   const deptName = useMemo(
     () => new Map(departments.map((d) => [d.id, d.d_name])),
@@ -115,6 +118,22 @@ export default function Students() {
     loadPage()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, pageSize, statusFilter, deptFilter, debouncedSearch])
+
+  useEffect(() => {
+    if (!menuOpen) return
+    function onDocClick(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false)
+    }
+    function onEsc(e) {
+      if (e.key === 'Escape') setMenuOpen(false)
+    }
+    document.addEventListener('mousedown', onDocClick)
+    document.addEventListener('keydown', onEsc)
+    return () => {
+      document.removeEventListener('mousedown', onDocClick)
+      document.removeEventListener('keydown', onEsc)
+    }
+  }, [menuOpen])
 
   async function loadDepartments() {
     const { data, error } = await supabase
@@ -465,6 +484,64 @@ export default function Students() {
     showToast('success', 'Template-ka waa la soo dejiyay.')
   }
 
+  async function fetchAllStudents() {
+    const BATCH = 1000
+    const all = []
+    let from = 0
+    for (;;) {
+      const { data, error } = await supabase
+        .from('voiteid_id_db')
+        .select('c_id, student_name, student_department_id, semester, is_used, c_created_at')
+        .not('student_name', 'is', null)
+        .order('id', { ascending: true })
+        .range(from, from + BATCH - 1)
+      if (error) throw error
+      all.push(...(data || []))
+      if (!data || data.length < BATCH) break
+      from += BATCH
+    }
+    return all
+  }
+
+  async function exportStudents() {
+    if (exporting) return
+    setExporting(true)
+    try {
+      // Lazy-load the spreadsheet writer only when the admin exports.
+      const XLSX = await import('xlsx')
+      const rows = await fetchAllStudents()
+      if (!rows.length) {
+        showToast('warn', 'Arday lama helin si loo dhoofiyo.')
+        return
+      }
+
+      const header = ['Student Name', 'Department', 'Semester', 'Voting ID', 'Status', 'Added']
+      const aoa = [
+        header,
+        ...rows.map((r) => [
+          r.student_name || '',
+          r.student_department_id != null ? deptName.get(r.student_department_id) || '' : '',
+          r.semester || '',
+          r.c_id || '',
+          r.is_used ? 'Voted' : 'Not Voted',
+          formatDateTime(r.c_created_at),
+        ]),
+      ]
+
+      const ws = XLSX.utils.aoa_to_sheet(aoa)
+      ws['!cols'] = [{ wch: 28 }, { wch: 28 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 20 }]
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, ws, 'Students')
+      const stamp = new Date().toISOString().slice(0, 10)
+      XLSX.writeFile(wb, `students_${stamp}.xlsx`)
+      showToast('success', `${rows.length} arday ayaa la dhoofiyay.`)
+    } catch (err) {
+      showToast('error', err.message || 'Waa khalad, isku day markale.')
+    } finally {
+      setExporting(false)
+    }
+  }
+
   if (!bootDone) {
     return (
       <div className="spinner-center">
@@ -514,20 +591,57 @@ export default function Students() {
           </h2>
           <p className="page-subtitle">Soo geli oo maamul ardayda codbixinta (Excel ama CSV).</p>
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button className="btn btn-outline" onClick={downloadTemplate}>
-            <i className="fa-solid fa-file-csv" /> Template
-          </button>
-          <button
-            className="btn btn-danger"
-            onClick={() => setBulkDeleteTarget('students')}
-            disabled={serverStats.total === 0}
-          >
-            <i className="fa-solid fa-trash" /> Delete All Students
-          </button>
+        <div className="hdr-actions">
           <button className="btn btn-primary" onClick={openImport}>
             <i className="fa-solid fa-file-import" /> Import Students
           </button>
+          <div className="actions-menu" ref={menuRef}>
+            <button
+              className="icon-btn"
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              title="More actions"
+            >
+              <i className="fa-solid fa-ellipsis-vertical" />
+            </button>
+            {menuOpen && (
+              <div className="actions-dropdown" role="menu">
+                <button
+                  role="menuitem"
+                  onClick={() => {
+                    setMenuOpen(false)
+                    downloadTemplate()
+                  }}
+                >
+                  <i className="fa-solid fa-file-csv" /> Download Template
+                </button>
+                <button
+                  role="menuitem"
+                  onClick={() => {
+                    setMenuOpen(false)
+                    exportStudents()
+                  }}
+                  disabled={exporting || serverStats.total === 0}
+                >
+                  <i className={`fa-solid ${exporting ? 'fa-spinner fa-spin' : 'fa-file-export'}`} />{' '}
+                  Export All Students
+                </button>
+                <div className="actions-divider" />
+                <button
+                  role="menuitem"
+                  className="danger"
+                  onClick={() => {
+                    setMenuOpen(false)
+                    setBulkDeleteTarget('students')
+                  }}
+                  disabled={serverStats.total === 0}
+                >
+                  <i className="fa-solid fa-trash" /> Delete All Students
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

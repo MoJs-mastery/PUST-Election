@@ -4489,6 +4489,100 @@ textarea.form-input {
   color: var(--pust-muted);
 }
 
+.hdr-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.hdr-actions .btn {
+  white-space: nowrap;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 13px;
+  border-radius: 10px;
+  border: 1px solid var(--pust-border, #e2e8f0);
+  background: var(--pust-surface, #fff);
+  color: var(--pust-text, #334155);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.icon-btn:hover {
+  background: rgba(0, 84, 166, 0.06);
+  border-color: var(--pust-primary, #0054a6);
+}
+
+.actions-menu {
+  position: relative;
+}
+
+.actions-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  min-width: 246px;
+  background: var(--pust-surface, #fff);
+  border: 1px solid var(--pust-border, #e2e8f0);
+  border-radius: 12px;
+  box-shadow: 0 14px 36px rgba(15, 23, 42, 0.16);
+  padding: 6px;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+}
+
+.actions-dropdown button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--pust-text, #334155);
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.actions-dropdown button:hover:not(:disabled) {
+  background: rgba(0, 84, 166, 0.08);
+}
+
+.actions-dropdown button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.actions-dropdown button.danger {
+  color: var(--pust-danger, #dc2626);
+}
+
+.actions-dropdown button.danger:hover:not(:disabled) {
+  background: rgba(220, 38, 38, 0.08);
+}
+
+.actions-dropdown i {
+  width: 16px;
+  text-align: center;
+}
+
+.actions-divider {
+  height: 1px;
+  background: var(--pust-border, #e2e8f0);
+  margin: 5px 4px;
+}
+
 .import-upload-zone {
   border: 2px dashed var(--pust-border, #cbd5e1);
   border-radius: 12px;
