@@ -93,9 +93,9 @@ The `schema.sql` file in the repo root matches the live database schema. Tables:
 
 1. Admin generates voting ID codes on **Voiteid** (inserted into `voiteid_id_db`, `is_used = false`).
 2. Voter opens `/vote` and clicks **Codeeh** on a candidate.
-3. Voter enters their voting ID in the modal. The app calls the `validate_voting_code` RPC (returns a safe boolean — a code that is invalid **or** already used both come back `false`).
-4. Voter selects department and gender, then clicks **Continue**.
-5. The confirm dialog shows the chosen candidate. Confirming calls the `cast_vote` RPC, which server-side locks the voting-code row (`FOR UPDATE`), validates the code/candidate/department/gender, and **in one transaction** inserts the ballot into `codbixiye_codbixiye_db` and marks the code used in `voiteid_id_db`. A duplicate/concurrent submit on the same code is rejected.
+3. Voter enters their voting ID in the modal. The app calls the `lookup_vote_department` RPC, which returns a safe result — a code that is invalid **or** already used both come back `valid: false` — and, for a valid code, the department the ID was issued for, so the form pre-selects the student's own department. If the student picks a different department the form shows an error and blocks Continue.
+4. Voter (with their own department selected) picks gender, then clicks **Continue**.
+5. The confirm dialog shows the chosen candidate. Confirming calls the `cast_vote` RPC, which server-side locks the voting-code row (`FOR UPDATE`), validates the code/candidate/department/gender, rejects a department that is not the voter's own (`DEPARTMENT_MISMATCH`), and **in one transaction** inserts the ballot into `codbixiye_codbixiye_db` and marks the code used in `voiteid_id_db`. A duplicate/concurrent submit on the same code is rejected.
 6. The success screen is shown, then **Done** returns to the landing page.
 
 ## Authentication
@@ -123,7 +123,7 @@ The `schema.sql` file in the repo root matches the live database schema. Tables:
    `VITE_*` variable is inlined into public JavaScript at build time and is
    readable by every visitor. Admin logins are managed through Supabase Auth,
    not through the client.
-3. Create the tables with the schema from `schema.sql` (run it in the Supabase SQL editor), then run the **hardening migration** `supabase/migrations/202609180001_security_hardening.sql` (enables RLS + secure voting RPCs), then the **candidate portal migration** `supabase/migrations/202609260001_candidate_portal.sql`, and enable Supabase Auth. See `docs/SECURITY_TESTING.md` for the checks to run afterwards.
+3. Create the tables with the schema from `schema.sql` (run it in the Supabase SQL editor), then run the **hardening migration** `supabase/migrations/202609180001_security_hardening.sql` (enables RLS + secure voting RPCs), then the **candidate portal migration** `supabase/migrations/202609260001_candidate_portal.sql`, the **students import migration** `supabase/migrations/202610130001_students_import.sql` (student columns + `import_students()`), and the **vote department lock migration** `supabase/migrations/202610140001_vote_department_lock.sql` (voters may only vote under their own department), and enable Supabase Auth. See `docs/SECURITY_TESTING.md` for the checks to run afterwards.
 4. Start the dev server:
    ```bash
    npm run dev
@@ -170,6 +170,8 @@ npm run test:watch   # run tests in watch mode
 | `schema.sql` | Tables + storage bucket + FK CASCADE fix (no RLS statements) |
 | `supabase/migrations/202609180001_security_hardening.sql` | **Required**: RLS on all tables, secure voting RPCs, superuser checks, storage hardening, constraints, profiles bootstrap |
 | `supabase/migrations/202609260001_candidate_portal.sql` | **Required for candidate login**: `auth_id` column on candidates + own-data SELECT policies |
+| `supabase/migrations/202610130001_students_import.sql` | **Required for student import**: `student_name` / `student_department_id` / `semester` columns + `import_students()` / `students_stats()` |
+| `supabase/migrations/202610140001_vote_department_lock.sql` | **Required for department lock**: `lookup_vote_department()` + `cast_vote()` rejects a department that is not the voter's own |
 | `supabase/indexes.sql` | Production indexes for the vote log and hot tables |
 | `supabase/rls_hardening.sql` | Superseded (warns + points to the migration) |
 | `supabase/functions/cast-vote/index.ts` | Optional Edge Function for IP rate-limited voting |

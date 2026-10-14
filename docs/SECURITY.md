@@ -48,10 +48,16 @@ policies:
 - Atomically inserts the vote AND consumes the code. Failures return app-level
   codes (`INVALID_VOTING_CODE`, `VOTING_CODE_ALREADY_USED`,
   `INVALID_CANDIDATE`, `CANDIDATE_NOT_ALLOWED`, `INVALID_DEPARTMENT`,
-  `INVALID_GENDER`, `VOTE_FAILED`).
+  `DEPARTMENT_MISMATCH`, `INVALID_GENDER`, `VOTE_FAILED`).
 - `public.validate_voting_code()` gives voters a safe boolean check ("is my
   ID still usable?") without revealing whether a code exists vs. already used
   (no enumeration oracle).
+- `public.lookup_vote_department()` returns `{valid:false}` for an invalid or
+  used code (same signal as the boolean check) and, only for a valid code, the
+  department the ID was issued for, so the form can pre-select the voter's own
+  department. `cast_vote()` independently enforces it: a ballot whose
+  department is not the voter's own is rejected with `DEPARTMENT_MISMATCH`
+  (legacy IDs with no recorded department keep free choice).
 
 ### Storage hardening
 - Write/update/delete policies now require `is_superuser()` **and** a path

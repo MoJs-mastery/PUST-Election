@@ -23,7 +23,9 @@ export default function Voting() {
   const [idState, setIdState] = useState('')
   const [idMsg, setIdMsg] = useState('')
   const [idVerified, setIdVerified] = useState(false)
+  const [assignedDept, setAssignedDept] = useState(null) // { id, name } | null
   const [deptValue, setDeptValue] = useState('')
+  const [deptMsg, setDeptMsg] = useState('')
   const [genderValue, setGenderValue] = useState('')
   const [deptErr, setDeptErr] = useState(false)
   const [genderErr, setGenderErr] = useState(false)
@@ -76,6 +78,12 @@ export default function Voting() {
     setIdState('')
     setIdMsg('')
     setIdVerified(false)
+    setAssignedDept(null)
+    setDeptValue('')
+    setDeptMsg('')
+    setGenderValue('')
+    setDeptErr(false)
+    setGenderErr(false)
   }
 
   function handleIdInput(value) {
@@ -87,6 +95,10 @@ export default function Voting() {
     setIdState('')
     setIdMsg('')
     setIdVerified(false)
+    setAssignedDept(null)
+    setDeptValue('')
+    setDeptMsg('')
+    setDeptErr(false)
   }
 
   async function verifyId() {
@@ -96,12 +108,19 @@ export default function Voting() {
     }
     setIdState('spin')
     setIdMsg('')
+    const code = voteId.trim().toUpperCase()
     try {
-      const { data: ok, error } = await supabase.rpc('validate_voting_code', {
-        p_voting_code: voteId.trim().toUpperCase(),
+      // Preferred path: RPC that also tells us which department this voting
+      // code was issued for, so the form can pre-select the student's own
+      // department. Falls back to the plain boolean RPC on deployments where
+      // the department-lock migration has not been applied yet.
+      const { data: info, error } = await supabase.rpc('lookup_vote_department', {
+        p_voting_code: code,
       })
 
-      if (error || !ok) {
+      if (error) throw error
+
+      if (!info || info.valid !== true) {
         setIdState('err')
         setIdMsg('ID-gaagu waa khalad ama waa la isticmaalay.')
         showVoteToast('warn', 'ID-gaagu waa khalad ama waa la isticmaalay.')
@@ -110,9 +129,33 @@ export default function Voting() {
 
       setIdState('ok')
       setIdVerified(true)
+
+      if (info.department_name) {
+        setAssignedDept({ id: info.department_id ?? null, name: info.department_name })
+        setDeptValue(info.department_name)
+        setDeptMsg('')
+        setDeptErr(false)
+      } else {
+        setAssignedDept(null)
+      }
     } catch (err) {
-      setIdState('err')
-      showVoteToast('error', 'Waa khalad, isku day markale.')
+      try {
+        const { data: ok, error } = await supabase.rpc('validate_voting_code', {
+          p_voting_code: code,
+        })
+        if (error || !ok) {
+          setIdState('err')
+          setIdMsg('ID-gaagu waa khalad ama waa la isticmaalay.')
+          showVoteToast('warn', 'ID-gaagu waa khalad ama waa la isticmaalay.')
+          return
+        }
+        setIdState('ok')
+        setIdVerified(true)
+        setAssignedDept(null)
+      } catch (e2) {
+        setIdState('err')
+        showVoteToast('error', 'Waa khalad, isku day markale.')
+      }
     }
   }
 
@@ -131,6 +174,10 @@ export default function Voting() {
     }
     if (!deptValue) {
       setDeptErr(true)
+      hasErr = true
+    } else if (assignedDept && deptValue !== assignedDept.name) {
+      setDeptErr(true)
+      setDeptMsg(`Waaxdan kuma qalanto. Fadlan dooro waaxdaada: ${assignedDept.name}.`)
       hasErr = true
     }
     if (!genderValue) {
@@ -160,7 +207,9 @@ export default function Voting() {
       const votePayload = {
         p_voting_code: upperId,
         p_candidate_id: selectedCandidate.id,
-        p_department_id: deptObj?.id || deptValue,
+        // The voter's own department (from their voting ID) is the source of
+        // truth; the server also enforces this when it is recorded.
+        p_department_id: assignedDept?.id ?? deptObj?.id ?? deptValue,
         p_gender: genderValue,
       }
 
@@ -202,6 +251,7 @@ export default function Voting() {
         INVALID_CANDIDATE: 'Musharaxa lama helin.',
         CANDIDATE_NOT_ALLOWED: 'Musharaxan cod laguma qaadi karo.',
         INVALID_DEPARTMENT: 'Waaxda (waxaha) lama helin.',
+        DEPARTMENT_MISMATCH: 'Waaxdan kuma qalanto. Fadlan dooro waaxdaada.',
         INVALID_GENDER: 'Jinsiga lama aqoonsan.',
         VOTE_FAILED: 'Khalad ayaa dhacay, isku day markale.',
       }
@@ -238,7 +288,13 @@ export default function Voting() {
 
   function selectDept(dept) {
     setDeptValue(dept)
-    setDeptErr(false)
+    if (assignedDept && dept !== assignedDept.name) {
+      setDeptErr(true)
+      setDeptMsg(`Waaxdan kuma qalanto. Fadlan dooro waaxdaada: ${assignedDept.name}.`)
+    } else {
+      setDeptErr(false)
+      setDeptMsg('')
+    }
   }
 
   function selectGender(gender) {
@@ -527,6 +583,18 @@ export default function Voting() {
               onSelect={selectDept}
               error={deptErr}
             />
+            {assignedDept && !deptMsg && (
+              <div className="field-msg ok">
+                <i className="fa-solid fa-lock" />
+                Waaxdaada waa la xaqiijiyay: {assignedDept.name}
+              </div>
+            )}
+            {deptMsg && (
+              <div className="field-msg">
+                <i className="fa-solid fa-circle-exclamation" />
+                {deptMsg}
+              </div>
+            )}
           </div>
 
           <div className="fgroup">
